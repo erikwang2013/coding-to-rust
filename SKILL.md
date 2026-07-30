@@ -35,7 +35,7 @@ This is the entry point for migrating code from any source language to Rust. It 
 | **Kotlin** | [kotlin-to-rust](#kotlin-to-rust) | Coroutines to tokio, data class to struct, sealed class to enum, Gradle to Cargo |
 | **Swift** | [swift-to-rust](#swift-to-rust) | ARC to ownership, actor to Mutex, protocol to trait, SwiftUI to Leptos |
 | **Ruby** | [ruby-to-rust](#ruby-to-rust) | GC to ownership, blocks to closures, Rails to Axum, Bundler to Cargo |
-| **Vue** | [vue-to-rust](#vue-to-rust-wasm) | :warning: **(Frontend / WebAssembly — NOT backend)** SFC to component functions, ref() to RwSignal, Vite to Trunk |
+| **Vue** | [vue-to-rust](#vue-to-rust) | :warning: **(Frontend / WebAssembly — NOT backend)** SFC to component functions, ref() to RwSignal, Vite to Trunk |
 
 ## Universal Migration Concepts
 
@@ -318,7 +318,7 @@ Every source language except C, C++, Zig, and Swift (which uses ARC) has a garba
 
 → Full guide: `ruby-to-rust`
 
-### Vue to Rust (WASM)
+### Vue to Rust
 
 | Vue | Rust WASM | Quick Note |
 |-----|-----------|------------|
