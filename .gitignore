@@ -5,6 +5,7 @@
 Thumbs.db
 .phpunit.cache
 .claude
+.claude-flow
 .swarm
 .mcp.json
 ruvector.db
