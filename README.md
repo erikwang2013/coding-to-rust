@@ -4,7 +4,7 @@
 
 ## 项目介绍
 
-**Coding to Rust** 是一个 Claude Code 技能集合，覆盖从 13 种主流编程语言迁移到 Rust 的完整指南。每种语言提供：
+**Coding to Rust** 是一个 Claude Code 技能集合，覆盖从 16 种主流编程语言迁移到 Rust 的完整指南。每种语言提供：
 
 - **架构映射** — 运行时差异、范式转换、内存模型对照
 - **类型系统对照表** — 30-80 条精确的类型/语法映射
@@ -30,7 +30,10 @@
 | 10 | Lua | `lua-to-rust/` | table→struct/enum、元表OOP→trait、coroutine→async |
 | 11 | R | `r-to-rust/` | data.frame→polars、formula→builder、apply→迭代器 |
 | 12 | Julia | `julia-to-rust/` | 多重分派→trait、JIT→AOT、Array→ndarray |
-| 13 | Vue | `vue-to-rust/` | SFC→组件函数、ref()→RwSignal、Vite→Trunk |
+| 13 | Kotlin | `kotlin-to-rust/` | Coroutines→tokio、data class→struct、sealed class→enum、Gradle→Cargo |
+| 14 | Swift | `swift-to-rust/` | ARC→ownership、actor→Mutex、protocol→trait、SwiftUI→Leptos |
+| 15 | Ruby | `ruby-to-rust/` | GC→ownership、blocks→closures、Rails→Axum、Bundler→Cargo |
+| 16 | Vue | `vue-to-rust/` | SFC→组件函数、ref()→RwSignal、Vite→Trunk |
 
 ## 项目架构
 
@@ -39,25 +42,28 @@ coding-to-rust/
 ├── README.md                 # 本文件 — 项目说明（中文）
 ├── README.en.md              # 英文版项目说明
 ├── SKILL.md                  # 总入口（Claude Code 加载此文件）
-│                               - 13 语言快速选择器
+│                               - 16 语言快速选择器
 │                               - 通用迁移概念（所有权/异步/错误处理/构建系统）
-│                               - 各语言 12-15 条快速对照表
+│                               - 各语言 6-8 条核心快速对照表
 │                               - 跨语言通用错误
 │                               - 语言无关的 5 阶段迁移策略
 │
-├── python-to-rust/           # Python → Rust 详细指南（1012 行）
-├── php-to-rust/              # PHP → Rust 详细指南（928 行）
-├── nodejs-to-rust/           # JS/TS → Rust 详细指南（859 行）
-├── csharp-to-rust/           # C# → Rust 详细指南（817 行）
-├── cpp-to-rust/              # C++ → Rust 详细指南（802 行）
-├── zig-to-rust/              # Zig → Rust 详细指南（777 行）
-├── java-to-rust/             # Java → Rust 详细指南（743 行）
-├── r-to-rust/                # R → Rust 详细指南（674 行）
-├── go-to-rust/               # Go → Rust 详细指南（650 行）
-├── julia-to-rust/            # Julia → Rust 详细指南（644 行）
-├── c-to-rust/                # C → Rust 详细指南（641 行）
-├── lua-to-rust/              # Lua → Rust 详细指南（640 行）
-└── vue-to-rust/              # Vue → Rust (WASM) 详细指南（627 行）
+├── python-to-rust/           # Python → Rust 详细指南
+├── php-to-rust/              # PHP → Rust 详细指南
+├── nodejs-to-rust/           # JS/TS → Rust 详细指南
+├── csharp-to-rust/           # C# → Rust 详细指南
+├── cpp-to-rust/              # C++ → Rust 详细指南
+├── zig-to-rust/              # Zig → Rust 详细指南
+├── java-to-rust/             # Java → Rust 详细指南
+├── r-to-rust/                # R → Rust 详细指南
+├── go-to-rust/               # Go → Rust 详细指南
+├── julia-to-rust/            # Julia → Rust 详细指南
+├── c-to-rust/                # C → Rust 详细指南
+├── lua-to-rust/              # Lua → Rust 详细指南
+├── kotlin-to-rust/           # Kotlin → Rust 详细指南
+├── swift-to-rust/            # Swift → Rust 详细指南
+├── ruby-to-rust/             # Ruby → Rust 详细指南
+└── vue-to-rust/              # Vue → Rust (WASM) 详细指南
 ```
 
 **设计原则：**
@@ -82,7 +88,7 @@ coding-to-rust/
 ### 使用流程
 
 1. **自动加载** — Claude Code 识别到迁移需求，加载 `coding-to-rust/SKILL.md`
-2. **快速对照** — 查看你所用语言的 12-15 条核心映射，快速理解大致对应关系
+2. **快速对照** — 查看你所用语言的 6-8 条核心映射，快速理解大致对应关系
 3. **深入查阅** — 需要代码示例、框架详细对照时，Claude 自动读取对应语言的详细 `SKILL.md`
 4. **交叉参考** — 涉及多语言共享模式时，通过交叉引用链接到其他语言的对应章节
 
@@ -102,9 +108,9 @@ coding-to-rust/
 
 | 层级 | 对应文件 | 规模 | 适用场景 |
 |------|----------|------|----------|
-| 轻量 | 索引层快速对照表 | ~15 行/语言 | 快速查询，确认基本映射 |
+| 轻量 | 索引层快速对照表 | ~8 行/语言 | 快速查询，确认基本映射 |
 | 中等 | 索引层通用概念 | ~60 行 | 理解 Rust 核心范式 |
-| 详细 | 各语言 SKILL.md | 627-1012 行 | 深度迁移、代码示例、框架对照 |
+| 详细 | 各语言 SKILL.md | 600-1000 行 | 深度迁移、代码示例、框架对照 |
 
 ## 贡献
 

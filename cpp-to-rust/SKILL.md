@@ -1,6 +1,7 @@
 ---
 name: cpp-to-rust
-description: Use when migrating C++ codebases to Rust — covers type mapping, template-to-generics translation, virtual dispatch to trait objects, STL-to-std mapping, move semantics, exception-to-Result conversion, and incremental replacement strategy. Includes canonical signatures, common mistakes, and reference implementations.
+description: Use when migrating C++ codebases to Rust — covers templates to generics, virtual dispatch to trait objects/enums, STL to std collections, move semantics to ownership, exceptions to Result, CMake to Cargo, and incremental class-to-module replacement. Includes canonical code patterns, common mistakes, and reference implementations.
+updated: 2026-07-30
 ---
 
 ## Architecture Mapping
@@ -792,7 +793,7 @@ impl Cache {
 | [cxx](https://github.com/dtolnay/cxx) | Safe C++ FFI bridge | The canonical tool for C++/Rust interop |
 | [rg3d](https://github.com/rg3dengine/rg3d) | Game engine (replaced C++ engines like Unreal/Unity patterns) | ECS architecture, GPU resource management |
 
-## Cross-References
+## Cross-Reference
 
 - `c-to-rust`: For C codebases with manual memory management and raw pointers
 - `nodejs-to-rust`: For Node.js backends with async event loop patterns

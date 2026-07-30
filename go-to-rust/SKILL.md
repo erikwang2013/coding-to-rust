@@ -1,6 +1,7 @@
 ---
 name: go-to-rust
-description: Use when migrating Go codebases to Rust — covers goroutine/async translation, channel-to-mpsc mapping, interface-to-trait conversion, ownership semantics for shared memory, FFI bridging with cgo replacement, and incremental migration strategy. Includes canonical signatures, common mistakes, and reference implementations.
+description: Use when migrating Go codebases to Rust — covers goroutine to tokio task, channel to mpsc, interface to trait, GC to ownership, defer to Drop/RAII, and cgo to FFI replacement. Includes canonical code patterns, common mistakes, and reference implementations.
+updated: 2026-07-30
 ---
 
 # Go to Rust Migration

@@ -1,6 +1,7 @@
 ---
 name: c-to-rust
-description: Use when migrating C codebases to Rust — covers type mapping, ownership translation, pointer-to-reference migration, build system conversion, FFI bridging, and incremental replacement strategy. Includes canonical signatures, common mistakes, and reference implementations.
+description: Use when migrating C codebases to Rust — covers malloc/free to ownership, pointers to references, headers to modules, errno to Result, Makefile/CMake to Cargo, and incremental leaf-to-root replacement strategy. Includes canonical code patterns, common mistakes, and reference implementations.
+updated: 2026-07-30
 ---
 
 ## Architecture Mapping
@@ -633,7 +634,7 @@ fn generic_push_trait<T: Clone>(vec: &mut Vec<T>, value: &T) {
 | [coreutils](https://github.com/uutils/coreutils) | Rewrite of GNU coreutils in Rust | Direct C-to-Rust function-level porting |
 | [fish-shell](https://github.com/fish-shell/fish-shell) | Migrating from C++ to Rust | Incremental port strategy, FFI between C++ and Rust |
 
-## Cross-References
+## Cross-Reference
 
 - `cpp-to-rust`: For C++ codebases with templates, virtual dispatch, and RAII patterns
 - `zig-to-rust`: For comptime-heavy code and custom allocator patterns

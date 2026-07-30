@@ -1,6 +1,7 @@
 ---
 name: lua-to-rust
-description: Use when migrating Lua codebases to Rust — covers type mapping, ownership translation, coroutine-to-async migration, FFI bridging, and incremental replacement strategy. Includes canonical signatures, common mistakes, and reference implementations.
+description: Use when migrating Lua codebases to Rust — covers table to struct/enum, metatable OOP to traits, coroutine to async/await, OpenResty to Axum, LuaRocks to Cargo, and incremental migration via mlua embedding. Includes canonical code patterns, common mistakes, and reference implementations.
+updated: 2026-07-30
 ---
 
 # Lua to Rust Migration Guide
@@ -632,7 +633,7 @@ items.insert(5, "hello".into()); // 安全且语义正确
 | [LuaJIT-remake](https://github.com/bombela/luajit-remake) | LuaJIT concepts implemented in Rust | Reference for understanding LuaJIT internals in Rust |
 | [Roblox-ts](https://github.com/roblox-ts/roblox-ts) | TypeScript-to-Luau compiler | Type-first approach to Lua; similar migration philosophy |
 
-## Related Skills
+## Cross-Reference
 
 - **c-to-rust** — For migrating Lua C modules and FFI patterns
 - **nodejs-to-rust** — For event-loop and async patterns common to both Lua and JS

@@ -1,6 +1,7 @@
 ---
 name: python-to-rust
-description: Use when migrating Python codebases to Rust — covers dynamic-to-static type mapping, asyncio-to-tokio translation, Django/Flask/FastAPI to Axum/Actix migration, numpy/pandas to ndarray/polars, pip/poetry to Cargo, GIL-limitations to true parallelism, exception-to-Result conversion, and incremental migration via PyO3. Includes canonical signatures, common mistakes, and reference implementations.
+description: Use when migrating Python codebases to Rust — covers dynamic-to-static typing, asyncio-to-tokio, Django/Flask/FastAPI to Axum/Actix, numpy/pandas to ndarray/polars, GIL to true parallelism, and incremental migration via PyO3. Includes canonical code patterns, common mistakes, framework mapping, and reference implementations.
+updated: 2026-07-30
 ---
 
 # Python to Rust Migration

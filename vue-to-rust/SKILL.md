@@ -1,6 +1,7 @@
 ---
 name: vue-to-rust
-description: Use when migrating Vue.js frontend codebases to Rust WASM — covers type mapping, reactive-to-signals translation, component architecture, SSR migration, and incremental replacement strategy. Includes canonical signatures, common mistakes, and reference implementations.
+description: Use when migrating Vue.js frontends to Rust WASM — covers SFC to Leptos/Dioxus components, ref()/reactive() to signals, v-if/v-for to Show/For, Pinia/Vuex to signal stores, vue-router to leptos_router, Vite to Trunk, and incremental WASM replacement. Includes canonical code patterns, common mistakes, and reference implementations.
+updated: 2026-07-30
 ---
 
 # Vue to Rust (WASM) Migration Guide
@@ -619,7 +620,7 @@ fn now_ms() -> f64 {
 | [Perseus](https://github.com/framesurge/perseus) | SSR framework with state management | Nuxt-to-Rust equivalent |
 | [sycamore](https://github.com/sycamore-rs/sycamore) | Fine-grained reactivity, no VDOM | Vue 3 reactivity model analogue |
 
-## Related Skills
+## Cross-Reference
 
 - **nodejs-to-rust** — For migrating Express/Fastify backends and npm build tooling
 - **go-to-rust** — For migrating API services that Vue frontends connect to

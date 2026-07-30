@@ -1,6 +1,7 @@
 ---
 name: nodejs-to-rust
-description: Use when migrating Node.js/TypeScript codebases to Rust — covers event-loop-to-tokio mapping, async/await patterns, Express/Axum routing translation, stream processing, JSON handling, npm-to-Cargo migration, and incremental replacement strategy. Includes canonical signatures, common mistakes, and reference implementations.
+description: Use when migrating Node.js/TypeScript codebases to Rust — covers event-loop to tokio, Express/Fastify to Axum, npm to Cargo, Promise to Future, and incremental replacement strategy. Includes canonical code patterns, common mistakes, and reference implementations.
+updated: 2026-07-30
 ---
 
 ## Architecture Mapping
@@ -846,7 +847,7 @@ fn handle(data: Data) {
 | [prisma-client-rust](https://github.com/Brendonovich/prisma-client-rust) | ORM (replaced Prisma Client JS) | Query builder, type-safe database access |
 | [binsider](https://github.com/orhun/binsider) | Binary analyzer | CLI tool patterns, TUI, file parsing |
 
-## Cross-References
+## Cross-Reference
 
 - `c-to-rust`: For C dependencies that your Node.js native addons depend on
 - `cpp-to-rust`: For C++ addon patterns and FFI migration

@@ -1,6 +1,7 @@
 ---
 name: java-to-rust
-description: Use when migrating Java codebases to Rust — covers JVM-to-native compilation, class/inheritance-to-trait composition, Spring Boot to Actix/Axum mapping, JPA/Hibernate to Diesel/sqlx translation, checked exception to Result conversion, and incremental migration strategy. Includes canonical signatures, common mistakes, and reference implementations.
+description: Use when migrating Java codebases to Rust — covers JVM to native binary, class/inheritance to trait composition, Spring Boot to Axum/Actix, JPA/Hibernate to Diesel/sqlx, checked exceptions to Result, and incremental migration via JNI. Includes canonical code patterns, common mistakes, and reference implementations.
+updated: 2026-07-30
 ---
 
 # Java to Rust Migration
@@ -73,26 +74,26 @@ Java's heap-centric memory model (everything is a reference except primitives) i
 ### The Stack/Heap Inversion
 
 ```java
-// Java: 对象总是在堆上分配，变量是引用
+// Java: objects always heap-allocated, variables are references
 class User {
-    private String name;      // 堆分配
-    private int age;          // 内联在 User 对象中
-    private List<Role> roles; // 堆分配，引用
+    private String name;      // heap-allocated
+    private int age;          // inlined in User object
+    private List<Role> roles; // heap-allocated, reference
 }
 
-// 所有 new User() 都在堆上
+// All new User() are heap-allocated
 User user = new User("Alice", 30, List.of(...));
 ```
 
 ```rust
-// Rust: 默认栈分配，堆需要显式 Box
+// Rust: stack-allocated by default; heap requires explicit Box
 struct User {
-    name: String,     // String 数据在堆上（自有），结构体本身可在栈上
-    age: u32,         // 内联，栈上
-    roles: Vec<Role>, // Vec 数据在堆上，结构体本身可在栈上
+    name: String,     // String data on heap (owned), struct itself can live on stack
+    age: u32,         // inlined, on stack
+    roles: Vec<Role>, // Vec data on heap, struct field inline on stack
 }
 
-// User 默认在栈上分配；如需堆分配使用 Box::new
+// User is stack-allocated by default; for heap use Box::new
 let user = User { name: "Alice".into(), age: 30, roles: vec![] };
 ```
 
@@ -112,30 +113,30 @@ let user = User { name: "Alice".into(), age: 30, roles: vec![] };
 ### The GC-Free Mindset
 
 ```java
-// Java: 信任 GC，随便分配
+// Java: trust the GC, allocate freely
 public List<Product> filterByCategory(List<Product> products, String category) {
     return products.stream()
         .filter(p -> p.getCategory().equals(category))
-        .collect(Collectors.toList()); // 新列表，GC 会处理旧列表
+        .collect(Collectors.toList()); // new list, GC handles the old one
 }
 ```
 
 ```rust
-// Rust: 明确所有权 —— 消耗原列表还是创建新列表？
+// Rust: explicit ownership -- consume original or create new?
 fn filter_by_category(products: Vec<Product>, category: &str) -> Vec<Product> {
-    // 消耗原 Vec，过滤后返回新 Vec（旧 Vec 被 drop）
+    // consume original Vec, filter, return new Vec (old Vec is dropped)
     products
-        .into_iter()  // 消耗原集合
+        .into_iter()  // consume original collection
         .filter(|p| p.category == category)
-        .collect()    // 新集合
+        .collect()    // new collection
 }
 
-// 如果需要保留原列表，借用一个迭代器
+// to keep the original, borrow an iterator
 fn filter_ref<'a>(products: &'a [Product], category: &str) -> Vec<&'a Product> {
     products
-        .iter()       // 借用，不消耗
+        .iter()       // borrow, does not consume
         .filter(|p| p.category == category)
-        .collect()    // 返回引用集合
+        .collect()    // returns reference collection
 }
 ```
 
@@ -146,7 +147,7 @@ Java's threading model (platform threads, virtual threads in Java 21+) maps to R
 ### Thread / CompletableFuture -> Async/Await
 
 ```java
-// Java: CompletableFuture 组合式异步
+// Java: CompletableFuture compositional async
 CompletableFuture<User> userFuture =
     CompletableFuture.supplyAsync(() -> fetchUser(id));
 
@@ -162,7 +163,7 @@ String result = userFuture
 ```
 
 ```rust
-// Rust: async/await — 顺序看起来像同步代码
+// Rust: async/await -- sequential reads like sync code
 use tokio::time::{timeout, Duration};
 
 let result = timeout(Duration::from_secs(5), async {
@@ -192,7 +193,7 @@ let result = timeout(Duration::from_secs(5), async {
 ### Virtual Threads vs. Async Tasks
 
 ```java
-// Java 21+: 虚拟线程 — 阻塞代码自动让出平台线程
+// Java 21+: virtual threads -- blocking code auto-yields platform threads
 try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
     executor.submit(() -> {
         var data = blockingApiCall(); // JVM 在阻塞时让出平台线程
@@ -202,7 +203,7 @@ try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
 ```
 
 ```rust
-// Rust: 显式 async/await — 不阻塞系统线程
+// Rust: explicit async/await -- never blocks OS threads
 tokio::spawn(async move {
     let data = reqwest::get(url).await?.json().await?;
     // .await 点自动让出运行时线程
@@ -330,7 +331,7 @@ validator = { version = "0.18", features = ["derive"] }
 ### 1. Interface -> Trait
 
 ```java
-// Java: 接口定义契约
+// Java: interface defines contract
 public interface PaymentProcessor {
     PaymentResult process(PaymentRequest request);
     boolean supports(PaymentMethod method);
@@ -350,7 +351,7 @@ public class StripeProcessor implements PaymentProcessor {
 ```
 
 ```rust
-// Rust: trait 定义行为契约，impl 显式实现
+// Rust: trait defines behavior contract, impl provides it
 pub trait PaymentProcessor {
     fn process(&self, request: &PaymentRequest) -> Result<PaymentResult, PaymentError>;
     fn supports(&self, method: PaymentMethod) -> bool;
@@ -387,7 +388,7 @@ fn process_batch(processors: &[&dyn PaymentProcessor], req: &PaymentRequest) {
 ### 2. Checked Exception -> Result
 
 ```java
-// Java: checked exception 强制声明
+// Java: checked exception enforces declaration
 public Order placeOrder(OrderRequest req)
     throws InsufficientStockException,
            PaymentFailedException,
@@ -407,7 +408,7 @@ public Order placeOrder(OrderRequest req)
 ```
 
 ```rust
-// Rust: Result 携带成功或错误，? 运算符传播
+// Rust: Result carries success or error, ? operator propagates
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -442,7 +443,7 @@ fn place_order(req: &OrderRequest) -> Result<Order, OrderError> {
 ### 3. Stream -> Iterator
 
 ```java
-// Java: Stream API — 声明式集合处理
+// Java: Stream API -- declarative collection processing
 List<Invoice> overdueInvoices = invoices.stream()
     .filter(inv -> inv.getDueDate().isBefore(LocalDate.now()))
     .filter(inv -> inv.getStatus() == Status.SENT)
@@ -452,7 +453,7 @@ List<Invoice> overdueInvoices = invoices.stream()
 ```
 
 ```rust
-// Rust: Iterator — 同样的组合模式，延迟计算
+// Rust: Iterator -- same compositional pattern, lazy
 use itertools::Itertools;
 
 let overdue_invoices: Vec<&Invoice> = invoices
@@ -467,7 +468,7 @@ let overdue_invoices: Vec<&Invoice> = invoices
 ### 4. Spring Service -> Feature-Gated Module
 
 ```java
-// Java: Spring 服务 —— DI 容器管理
+// Java: Spring service -- DI container-managed
 @Service
 @Transactional
 public class OrderService {
@@ -487,7 +488,7 @@ public class OrderService {
 ```
 
 ```rust
-// Rust: 无 DI 容器 —— 构造函数注入 + 接口 trait
+// Rust: no DI container -- constructor injection + trait interface
 pub struct OrderService<P: PaymentProcessor, N: Notifier> {
     order_repo: OrderRepository,
     payment_gateway: P,
@@ -517,7 +518,7 @@ impl<P: PaymentProcessor, N: Notifier> OrderService<P, N> {
 ### 5. Builder Pattern
 
 ```java
-// Java: Lombok @Builder 或手动 Builder
+// Java: Lombok @Builder or manual builder
 @Builder
 @Data
 public class QueryRequest {
@@ -538,7 +539,7 @@ QueryRequest req = QueryRequest.builder()
 ```
 
 ```rust
-// Rust: typed-builder crate 或 derive_builder
+// Rust: typed-builder crate or derive_builder
 use typed_builder::TypedBuilder;
 
 #[derive(TypedBuilder)]
@@ -578,7 +579,7 @@ Java-to-Rust migration typically happens service-by-service or via JNI for incre
 ### JNI Bridge (Rust library loaded by JVM)
 
 ```rust
-// Rust 侧：导出为 cdylib
+// Rust side: export as cdylib
 use jni::JNIEnv;
 use jni::objects::JClass;
 use jni::sys::jstring;
@@ -590,7 +591,7 @@ pub extern "system" fn Java_com_example_RustBridge_compute(
     input: jstring,
 ) -> jstring {
     let input: String = env.get_string(&input.into()).unwrap().into();
-    let result = compute_heavy(input); // Rust 高性能计算
+    let result = compute_heavy(input); // Rust high-performance computation
     env.new_string(result).unwrap().into_raw()
 }
 ```

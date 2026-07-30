@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-07-30T05:21:02.752Z",
+  "projectRoot": "/home/wwwroot/bag/change-skills/.claude/skills/coding-to-rust",
+  "structure": {
+    "hasPackageJson": false,
+    "hasTsConfig": false,
+    "hasClaudeConfig": false,
+    "hasClaudeFlow": true
+  },
+  "scannedAt": 1785388862752
+}

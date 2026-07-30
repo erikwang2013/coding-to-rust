@@ -4,7 +4,7 @@
 
 ## Introduction
 
-**Coding to Rust** is a Claude Code skills collection covering complete migration guides from 13 mainstream programming languages to Rust. Each language provides:
+**Coding to Rust** is a Claude Code skills collection covering complete migration guides from 16 mainstream programming languages to Rust. Each language provides:
 
 - **Architecture Mapping** — Runtime differences, paradigm shifts, memory model comparisons
 - **Type System Tables** — 30-80 precise type/syntax mappings
@@ -30,7 +30,10 @@
 | 10 | Lua | `lua-to-rust/` | Table→struct/enum, metatable OOP→traits, coroutines→async |
 | 11 | R | `r-to-rust/` | data.frame→polars, formula→builder pattern, apply→iterators |
 | 12 | Julia | `julia-to-rust/` | Multiple dispatch→traits, JIT→AOT, Array→ndarray |
-| 13 | Vue | `vue-to-rust/` | SFC→component functions, ref()→RwSignal, Vite→Trunk |
+| 13 | Kotlin | `kotlin-to-rust/` | Coroutines→tokio tasks, data class→struct, sealed class→enum, Gradle→Cargo |
+| 14 | Swift | `swift-to-rust/` | ARC→ownership, actor→Mutex, protocol→trait, SwiftUI→Leptos |
+| 15 | Ruby | `ruby-to-rust/` | GC→ownership, blocks→closures, Rails→Axum, Bundler→Cargo |
+| 16 | Vue | `vue-to-rust/` | SFC→component functions, ref()→RwSignal, Vite→Trunk |
 
 ## Project Architecture
 
@@ -39,25 +42,28 @@ coding-to-rust/
 ├── README.md                 # This file — project overview (Chinese)
 ├── README.en.md              # English version
 ├── SKILL.md                  # Master entry point (loaded by Claude Code)
-│                               - Quick selector for all 13 languages
+│                               - Quick selector for all 16 languages
 │                               - Universal concepts (ownership/async/errors/build)
-│                               - 12-15 quick-reference entries per language
+│                               - 6-8 core quick-reference entries per language
 │                               - Cross-language common mistakes
 │                               - Language-agnostic 5-phase migration strategy
 │
-├── python-to-rust/           # Python → Rust detailed guide (1012 lines)
-├── php-to-rust/              # PHP → Rust detailed guide (928 lines)
-├── nodejs-to-rust/           # JS/TS → Rust detailed guide (859 lines)
-├── csharp-to-rust/           # C# → Rust detailed guide (817 lines)
-├── cpp-to-rust/              # C++ → Rust detailed guide (802 lines)
-├── zig-to-rust/              # Zig → Rust detailed guide (777 lines)
-├── java-to-rust/             # Java → Rust detailed guide (743 lines)
-├── r-to-rust/                # R → Rust detailed guide (674 lines)
-├── go-to-rust/               # Go → Rust detailed guide (650 lines)
-├── julia-to-rust/            # Julia → Rust detailed guide (644 lines)
-├── c-to-rust/                # C → Rust detailed guide (641 lines)
-├── lua-to-rust/              # Lua → Rust detailed guide (640 lines)
-└── vue-to-rust/              # Vue → Rust (WASM) detailed guide (627 lines)
+├── python-to-rust/           # Python → Rust detailed guide
+├── php-to-rust/              # PHP → Rust detailed guide
+├── nodejs-to-rust/           # JS/TS → Rust detailed guide
+├── csharp-to-rust/           # C# → Rust detailed guide
+├── cpp-to-rust/              # C++ → Rust detailed guide
+├── zig-to-rust/              # Zig → Rust detailed guide
+├── java-to-rust/             # Java → Rust detailed guide
+├── r-to-rust/                # R → Rust detailed guide
+├── go-to-rust/               # Go → Rust detailed guide
+├── julia-to-rust/            # Julia → Rust detailed guide
+├── c-to-rust/                # C → Rust detailed guide
+├── lua-to-rust/              # Lua → Rust detailed guide
+├── kotlin-to-rust/           # Kotlin → Rust detailed guide
+├── swift-to-rust/            # Swift → Rust detailed guide
+├── ruby-to-rust/             # Ruby → Rust detailed guide
+└── vue-to-rust/              # Vue → Rust (WASM) detailed guide
 ```
 
 **Design Principles:**
@@ -82,7 +88,7 @@ In a Claude Code conversation, any of the following will auto-load this skill:
 ### Workflow
 
 1. **Auto-load** — Claude Code detects a migration need, loads `coding-to-rust/SKILL.md`
-2. **Quick Lookup** — Browse 12-15 core mappings for your language to understand the high-level correspondence
+2. **Quick Lookup** — Browse 6-8 core mappings for your language to understand the high-level correspondence
 3. **Deep Dive** — When code examples or detailed framework mappings are needed, Claude automatically loads the language-specific `SKILL.md`
 4. **Cross-Reference** — Multi-language shared patterns link to related sections in other languages
 
@@ -102,9 +108,9 @@ Regardless of source language, follow this order:
 
 | Tier | File | Size | Best For |
 |------|------|------|----------|
-| Light | Index quick-reference tables | ~15 lines/lang | Quick lookup, confirm basic mappings |
+| Light | Index quick-reference tables | ~8 lines/lang | Quick lookup, confirm basic mappings |
 | Medium | Index universal concepts | ~60 lines | Understanding core Rust paradigms |
-| Detailed | Per-language SKILL.md | 627-1012 lines | Deep migration, code examples, framework mapping |
+| Detailed | Per-language SKILL.md | 600-1000 lines | Deep migration, code examples, framework mapping |
 
 ## Contributing
 

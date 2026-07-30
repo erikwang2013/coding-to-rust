@@ -1,6 +1,7 @@
 ---
 name: julia-to-rust
-description: Use when migrating Julia codebases to Rust — covers type mapping, multiple dispatch to traits, JIT-to-AOT compilation, numerical computing migration, and incremental replacement strategy. Includes canonical signatures, common mistakes, and reference implementations.
+description: Use when migrating Julia codebases to Rust — covers JIT to AOT compilation, multiple dispatch to traits/enums, Array to ndarray, DataFrames to polars, Flux to burn/candle, and incremental replacement strategy. Includes canonical code patterns, common mistakes, and reference implementations.
+updated: 2026-07-30
 ---
 
 # Julia to Rust Migration Guide
@@ -636,7 +637,7 @@ fn dot_product(a: &[f64], b: &[f64]) -> f64 {
 | [symbolica](https://github.com/benruijl/symbolica) | Computer algebra system | Symbolics.jl analogue |
 | [evcxr](https://github.com/evcxr/evcxr) | Rust REPL for Jupyter | Interactive exploration, similar to Julia REPL/Pluto |
 
-## Related Skills
+## Cross-Reference
 
 - **python-to-rust** — For migrating numpy/scipy workflows similar to Julia's numerical stack
 - **r-to-rust** — For migrating statistical modeling and data frame operations

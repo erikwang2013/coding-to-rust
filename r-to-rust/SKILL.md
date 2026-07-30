@@ -1,6 +1,7 @@
 ---
 name: r-to-rust
-description: Use when migrating R codebases to Rust — covers type mapping, data frame to polars/ndarray translation, statistical modeling, plotting migration, and incremental replacement strategy. Includes canonical signatures, common mistakes, and reference implementations.
+description: Use when migrating R codebases to Rust — covers data.frame to polars, dplyr to Iterator combinators, ggplot2 to plotters, S3 dispatch to traits, Shiny to Leptos/Axum, and incremental migration via extendr. Includes canonical code patterns, common mistakes, and reference implementations.
+updated: 2026-07-30
 ---
 
 # R to Rust Migration Guide
@@ -665,7 +666,7 @@ fn run_pipeline(ctx: &AnalysisContext) -> Result<Report, Error> {
 | [linfa](https://github.com/rust-ml/linfa) | ML toolkit in Rust | Similar scope to tidymodels |
 | [evcxr](https://github.com/evcxr/evcxr) | Rust REPL for Jupyter | Interactive exploration, similar to R console |
 
-## Related Skills
+## Cross-Reference
 
 - **python-to-rust** — For migrating pandas/numpy/scipy-based workflows to Rust (ndarray/polars)
 - **julia-to-rust** — For migrating Julia's scientific computing and numerical workflows to Rust

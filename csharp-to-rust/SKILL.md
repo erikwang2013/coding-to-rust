@@ -1,6 +1,7 @@
 ---
 name: csharp-to-rust
-description: Use when migrating C# (.NET) codebases to Rust — covers CLR-to-native compilation, async/await/Task to tokio mapping, LINQ-to-Iterator translation, ASP.NET to Actix/Axum, Entity Framework to Diesel/sqlx, property/event/delegate patterns, and incremental replacement via platform invoke. Includes canonical signatures, common mistakes, and reference implementations.
+description: Use when migrating C# (.NET) codebases to Rust — covers CLR to native binary, async/Task to tokio, LINQ to Iterator combinators, ASP.NET to Axum/Actix, EF Core to Diesel/sqlx, and incremental replacement via platform invoke. Includes canonical code patterns, common mistakes, and reference implementations.
+updated: 2026-07-30
 ---
 
 # C# to Rust Migration

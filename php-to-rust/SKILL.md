@@ -1,6 +1,7 @@
 ---
 name: php-to-rust
-description: Use when migrating PHP codebases to Rust — covers dynamic-to-static type system mapping, class/inheritance-to-trait composition, Laravel/Symfony to Actix/Axum/Rocket migration, PDO to Diesel/sqlx, array shapes to Vec/HashMap, exception to Result, Composer to Cargo, and incremental migration via sidecar services. Includes canonical signatures, common mistakes, and reference implementations.
+description: Use when migrating PHP codebases to Rust — covers dynamic to static typing, Laravel/Symfony to Axum/Actix, PDO to sqlx/Diesel, array shapes to Vec/HashMap, exception to Result, Composer to Cargo, and incremental migration via sidecar services. Includes canonical code patterns, common mistakes, and reference implementations.
+updated: 2026-07-30
 ---
 
 # PHP to Rust Migration

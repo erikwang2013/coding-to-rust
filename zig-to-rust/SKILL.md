@@ -1,6 +1,7 @@
 ---
 name: zig-to-rust
-description: Use when migrating Zig codebases to Rust — covers comptime-to-proc-macro translation, allocator-to-ownership mapping, error-set-to-Result conversion, build.zig-to-Cargo migration, and incremental replacement strategy. Includes canonical signatures, common mistakes, and reference implementations.
+description: Use when migrating Zig codebases to Rust — covers comptime to proc macros/const generics, allocator to ownership, error sets to Result, build.zig to Cargo, and incremental replacement. Includes canonical code patterns, common mistakes, and reference implementations.
+updated: 2026-07-30
 ---
 
 ## Architecture Mapping
@@ -767,7 +768,7 @@ fn main() {
 | [zap](https://github.com/zigzap/zap) | HTTP server in Zig (wraps C facil.io) | Comparable to hyper/actix: C FFI wrapping, async I/O |
 | [capy](https://github.com/capy-ui/capy) | GUI framework in Zig | Comparable to egui/iced: immediate mode rendering, cross-platform |
 
-## Cross-References
+## Cross-Reference
 
 - `c-to-rust`: For C codebases -- similar memory model but C lacks comptime and error sets
 - `cpp-to-rust`: For C++ codebases with templates and RAII patterns similar in spirit to Zig comptime and defer
