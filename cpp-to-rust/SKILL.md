@@ -12,7 +12,7 @@ C++ and Rust share significant architectural DNA: both are systems-level languag
 
 A C++ project laid out as:
 
-```
+```text
 src/
   main.cpp
   parser.h / parser.cpp
@@ -23,7 +23,7 @@ src/
 
 translates to:
 
-```
+```text
 src/
   main.rs
   parser.rs

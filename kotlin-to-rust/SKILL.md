@@ -84,7 +84,7 @@ fun processUsers(users: List<User>): List<UserDto> {
         .filter { it.isActive }
         .map { it.toDto() }  // new list created, GC handles the old
 }
-```kotlin
+```
 
 ```rust
 // Rust: explicit ownership — consume or borrow?
@@ -104,7 +104,7 @@ fn process_users_ref(users: &[User]) -> Vec<UserDto> {
         .map(|u| u.to_dto())
         .collect()
 }
-```rust
+```
 
 ## Concurrency / Async Translation
 
@@ -139,7 +139,7 @@ suspend fun fetchAll(urls: List<String>): List<Response> = coroutineScope {
         async { httpClient.get(url) }
     }.awaitAll()
 }
-```kotlin
+```
 
 ```rust
 // Rust: structured concurrency with JoinSet
@@ -161,7 +161,7 @@ async fn fetch_all(urls: &[String]) -> Result<Vec<Response>, reqwest::Error> {
     }
     Ok(results)
 }
-```rust
+```
 
 ## Build System & Dependencies
 
@@ -199,7 +199,7 @@ thiserror = "2"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
 reqwest = { version = "0.12", features = ["json"] }
-```toml
+```
 
 ## Standard Library & Ecosystem Mapping
 
@@ -271,7 +271,7 @@ data class CreateUserRequest(
         require(age > 0) { "age must be positive" }
     }
 }
-```kotlin
+```
 
 ```rust
 // Rust: struct with validation constructor
@@ -296,7 +296,7 @@ impl CreateUserRequest {
         Ok(ValidatedUser { name: self.name, email: self.email, age: self.age })
     }
 }
-```rust
+```
 
 ### 2. Sealed Class → Enum with Variant Data
 
@@ -313,7 +313,7 @@ fun render(state: UiState<User>) = when (state) {
     is UiState.Success -> showUser(state.data)
     is UiState.Error -> showError(state.message)
 }
-```kotlin
+```
 
 ```rust
 // Rust: enum with variant data — same exhaustive matching
@@ -330,7 +330,7 @@ fn render(state: &UiState<User>) {
         UiState::Error(msg) => show_error(msg),
     }
 }
-```rust
+```
 
 ### 3. Extension Function → Extension Trait
 
@@ -338,7 +338,7 @@ fn render(state: &UiState<User>) {
 // Kotlin: extension function on String
 fun String.isValidEmail(): Boolean =
     this.contains('@') && this.contains('.')
-```kotlin
+```
 
 ```rust
 // Rust: extension trait pattern
@@ -351,7 +351,7 @@ impl StringExt for str {
         self.contains('@') && self.contains('.')
     }
 }
-```rust
+```
 
 ### 4. Coroutine Scope → Async Block
 
@@ -363,7 +363,7 @@ suspend fun loadDashboard(userId: String): Dashboard = coroutineScope {
     val notifications = async { notificationRepo.unread(userId) }
     Dashboard(user.await(), orders.await(), notifications.await())
 }
-```kotlin
+```
 
 ```rust
 // Rust: tokio::try_join! for concurrent work
@@ -375,7 +375,7 @@ async fn load_dashboard(user_id: &str) -> Result<Dashboard, AppError> {
     )?;
     Ok(Dashboard { user, orders, notifications })
 }
-```rust
+```
 
 ### 5. Builder Pattern (Kotlin DSL → typed-builder)
 
@@ -389,7 +389,7 @@ data class QueryRequest(
 )
 
 val req = QueryRequest(index = "products", query = "laptop", page = 1)
-```kotlin
+```
 
 ```rust
 // Rust: typed-builder crate
@@ -409,7 +409,7 @@ let req = QueryRequest::builder()
     .index("products".into())
     .query("laptop".into())
     .build(); // compile error if required fields are missing
-```rust
+```
 
 ### 6. Flow<T> → Stream Processing
 
@@ -421,7 +421,7 @@ fun searchUsers(query: String): Flow<User> = flow {
         emitAll(api.search(query))
     }
 }.flowOn(Dispatchers.IO)
-```kotlin
+```
 
 ```rust
 // Rust: async_stream or futures::Stream
@@ -441,7 +441,7 @@ fn search_users(query: &str, cache: &Cache, api: &Api) -> impl Stream<Item = Res
         }
     }
 }
-```rust
+```
 
 ### 7. Spring Boot @Service → Axum State Handler
 
@@ -465,7 +465,7 @@ class OrderController(private val service: OrderService) {
     @PostMapping("/orders")
     suspend fun create(@RequestBody req: OrderRequest) = service.placeOrder(req)
 }
-```kotlin
+```
 
 ```rust
 // Rust: explicit state with Axum
@@ -502,7 +502,7 @@ let state = Arc::new(AppState { db: pool, payment: gateway });
 let app = Router::new()
     .route("/orders", post(create_order))
     .with_state(state);
-```rust
+```
 
 ## FFI & Incremental Migration
 
@@ -543,7 +543,7 @@ fn process(users: Vec<User>) -> Vec<Dto> {
 fn process(users: &[User]) -> Vec<Dto> {
     users.iter().map(|user| transform(user)).collect()
 }
-```rust
+```
 
 ### Mistake 2: Treating `String` Like Kotlin's Nullable `String?`
 
@@ -556,7 +556,7 @@ fn get_name(user: &User) -> Option<String> {
 // CORRECT: Option only for truly optional values
 fn get_name(user: &User) -> &str { &user.name }
 fn find_user(id: &str) -> Option<User> { /* may not exist */ }
-```rust
+```
 
 ### Mistake 3: `Box<dyn Error>` as Catch-All
 
@@ -574,14 +574,14 @@ enum ApiError {
     #[error("internal error")]
     Internal(#[from] anyhow::Error),
 }
-```rust
+```
 
 ### Mistake 4: Holding Locks Across `.await`
 
 ```kotlin
 // Kotlin: Mutex.withLock { } is safe across suspend points
 mutex.withLock { sharedState.update() } // coroutine-safe
-```kotlin
+```
 
 ```rust
 // WRONG: holding std::sync::Mutex across .await — deadlock risk
@@ -589,7 +589,7 @@ mutex.withLock { sharedState.update() } // coroutine-safe
 let guard = async_mutex.lock().await;
 guard.update();
 drop(guard); // explicit drop before next .await
-```rust
+```
 
 ### Mistake 5: Overusing `object` / Singleton Pattern
 
@@ -599,7 +599,7 @@ object AppConfig {
     val apiUrl: String by lazy { System.getenv("API_URL") ?: "http://localhost" }
     val maxRetries: Int = 3
 }
-```kotlin
+```
 
 ```rust
 // WRONG: trying to mirror Kotlin's object with global static mut
@@ -617,7 +617,7 @@ pub fn config() -> &'static AppConfig {
 // For complex initialization: LazyLock (Rust 1.80+)
 use std::sync::LazyLock;
 static CONFIG: LazyLock<AppConfig> = LazyLock::new(|| AppConfig::from_env());
-```rust
+```
 
 ### Mistake 6: Expecting Reified Generics (Runtime Type Info)
 
@@ -626,7 +626,7 @@ static CONFIG: LazyLock<AppConfig> = LazyLock::new(|| AppConfig::from_env());
 inline fun <reified T> decode(json: String): T = Json.decodeFromString(json)
 
 val user = decode<User>("""{"name":"Alice"}""") // T known at runtime
-```kotlin
+```
 
 ```rust
 // Rust: generics are monomorphized at compile time — no runtime type info
@@ -641,7 +641,7 @@ fn decode<T: DeserializeOwned>(json: &str) -> Result<T, serde_json::Error> {
 fn decode_dynamic(json: &str) -> Result<Value, serde_json::Error> {
     serde_json::from_str(json)
 }
-```rust
+```
 
 ## Reference Implementations
 

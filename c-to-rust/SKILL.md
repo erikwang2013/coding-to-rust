@@ -12,7 +12,7 @@ C programs follow a procedural paradigm: global mutable state, manual memory man
 
 A C project organized as:
 
-```
+```text
 src/
   main.c
   parser.h
@@ -24,7 +24,7 @@ Makefile
 
 becomes:
 
-```
+```text
 src/
   main.rs
   parser.rs

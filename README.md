@@ -33,7 +33,7 @@
 | 13 | Kotlin | `kotlin-to-rust/` | Coroutines→tokio、data class→struct、sealed class→enum、Gradle→Cargo |
 | 14 | Swift | `swift-to-rust/` | ARC→ownership、actor→Mutex、protocol→trait、SwiftUI→Leptos |
 | 15 | Ruby | `ruby-to-rust/` | GC→ownership、blocks→closures、Rails→Axum、Bundler→Cargo |
-| 16 | Vue | `vue-to-rust/` | SFC→组件函数、ref()→RwSignal、Vite→Trunk |
+| 16 | Vue | `vue-to-rust/` | :warning: **(前端/WebAssembly — 非后端)** SFC→组件函数、ref()→RwSignal、Vite→Trunk |
 
 ## 项目架构
 
@@ -115,6 +115,3 @@ coding-to-rust/
 ## 贡献
 
 如需新增语言、修复错误或改进示例代码，请编辑对应语言的 `SKILL.md` 文件，并同步更新 `coding-to-rust/SKILL.md` 索引中的快速对照表和链接。
-
----
-

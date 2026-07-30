@@ -700,7 +700,7 @@ PHP-to-Rust migration typically happens at service boundaries or via PHP extensi
 
 ### Sidecar Pattern (Recommended)
 
-```
+```text
         +---------+
         | Nginx   |
         +----+----+

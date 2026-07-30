@@ -19,7 +19,7 @@ src/
   network.zig
 build.zig
 build.zig.zon
-```text
+```
 
 becomes:
 
@@ -30,7 +30,7 @@ src/
   network.rs
 Cargo.toml
 build.rs
-```text
+```
 
 Zig's emphasis on "no hidden allocations" maps beautifully to Rust: in Zig you see every allocator passed explicitly; in Rust you see every heap allocation via `Box`, `Vec`, `String`, `Arc` -- no invisible allocations in either language.
 
@@ -229,7 +229,7 @@ fn Matrix(comptime T: type, comptime rows: comptime_int, comptime cols: comptime
 }
 
 const Mat3x4 = Matrix(f32, 3, 4);
-```zig
+```
 
 **Rust:**
 ```rust
@@ -250,7 +250,7 @@ impl<T: Copy + Default, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, CO
 }
 
 type Mat3x4 = Matrix<f32, 3, 4>;
-```rust
+```
 
 ### Pattern 2: Error Sets → Enum-Based Error Types
 
@@ -271,7 +271,7 @@ fn parse(input: []const u8) ParserError!Ast {
 
 // error propagation:
 const ast = try parse(data);
-```zig
+```
 
 **Rust:**
 ```rust
@@ -300,7 +300,7 @@ fn parse(input: &str) -> Result<Ast, ParserError> {
 
 // error propagation: ? operator is equivalent to try
 let ast = parse(data)?;
-```rust
+```
 
 ### Pattern 3: Defer → Drop
 
@@ -320,7 +320,7 @@ fn processFile(path: []const u8) !void {
     // use file and arena ...
     // on exit file.close() and arena.deinit() run automatically
 }
-```zig
+```
 
 **Rust:**
 ```rust
@@ -339,7 +339,7 @@ fn process_file(path: &str) -> std::io::Result<()> {
     // arena and file Drop run automatically at scope exit
     Ok(())
 }
-```rust
+```
 
 ### Pattern 4: Optional Unwrapping
 
@@ -357,7 +357,7 @@ fn lookupOrDefault(key: []const u8, default: []const u8) []const u8 {
 fn requireConfig(key: []const u8) ![]const u8 {
     return getConfig(key) orelse error.ConfigMissing;
 }
-```zig
+```
 
 **Rust:**
 ```rust
@@ -373,7 +373,7 @@ fn lookup_or_default(key: &str, default: &str) -> &str {
 fn require_config(key: &str) -> Result<&str, ConfigError> {
     get_config(key).ok_or(ConfigError::Missing { key: key.to_string() })
 }
-```rust
+```
 
 ### Pattern 5: Allocator Interface → Ownership
 
@@ -395,7 +395,7 @@ fn freeTree(allocator: std.mem.Allocator, node: *Node) void {
     if (node.right) |right| freeTree(allocator, right);
     allocator.destroy(node);
 }
-```zig
+```
 
 **Rust:**
 ```rust
@@ -420,7 +420,7 @@ impl Drop for Node {
         }
     }
 }
-```rust
+```
 
 ### Pattern 6: Switch / Pattern Matching
 
@@ -440,7 +440,7 @@ fn handle(ev: Event) void {
         .quit => std.debug.print("quitting\n", .{}),
     }
 }
-```zig
+```
 
 **Rust:**
 ```rust
@@ -459,7 +459,7 @@ fn handle(ev: Event) {
     }
     // missing a variant triggers compiler error -- same exhaustive check as Zig
 }
-```rust
+```
 
 ### Pattern 7: Packed Struct / C ABI Layout
 
@@ -478,7 +478,7 @@ const TCPHeader = packed struct {
     checksum: u16,
     urgent_ptr: u16,
 };
-```zig
+```
 
 **Rust:**
 ```rust
@@ -503,7 +503,7 @@ pub struct TcpHeader {
 
 // Option B: use bitfield crate or manual bit operations
 // for simple cases, read bytes and extract bitfields with >> and &
-```rust
+```
 
 ## FFI & Incremental Migration
 
@@ -559,7 +559,7 @@ pub extern "C" fn engine_free_string(s: *mut c_char) {
         unsafe { drop(CString::from_raw(s)); }
     }
 }
-```rust
+```
 
 ```zig
 // Zig side calling Rust-exported C ABI functions
@@ -576,7 +576,7 @@ pub fn main() !void {
     defer c.engine_free_string(output);
     // use output ...
 }
-```zig
+```
 
 ### Calling Zig from Rust
 
@@ -593,7 +593,7 @@ extern "C" {
     fn zig_parse_protocol(data: *const u8, len: usize) -> i32;
     fn zig_serialize(data: *const u8, len: usize, out: *mut *mut u8, out_len: *mut usize) -> i32;
 }
-```rust
+```
 
 ## Common Mistakes
 
@@ -608,7 +608,7 @@ fn process() -> Result<(), Error> {
     // WRONG: every return point needs to remember cleanup
     // easy to miss on early return
 }
-```rust
+```
 
 **Right:**
 ```rust
@@ -626,7 +626,7 @@ fn process() -> Result<(), Error> {
     // temp is already freed
     Ok(())
 }
-```rust
+```
 
 ### Mistake 2: Translating `anytype` as `Box<dyn Any>`
 
@@ -636,7 +636,7 @@ fn process() -> Result<(), Error> {
 fn process_any(input: Box<dyn std::any::Any>) {
     // type information lost, downcast_ref needed everywhere
 }
-```rust
+```
 
 **Right:**
 ```rust
@@ -655,7 +655,7 @@ enum Input {
     Binary(Vec<u8>),
     Json(serde_json::Value),
 }
-```rust
+```
 
 ### Mistake 3: Direct `@intFromPtr` → `as` Pointer Casts
 
@@ -666,7 +666,7 @@ let addr = 0x1000usize;
 let ptr = addr as *const u8;
 let bytes = unsafe { std::slice::from_raw_parts(ptr, 16) };
 // only valid in very specific scenarios (memory-mapped IO)
-```rust
+```
 
 **Right:**
 ```rust
@@ -688,7 +688,7 @@ mod hardware {
         }
     }
 }
-```rust
+```
 
 ### Mistake 4: Using `unsafe` Everywhere as Zig-idiomatic "I Know What I'm Doing"
 
@@ -700,7 +700,7 @@ unsafe fn fast_copy(src: &[u8], dst: &mut [u8]) {
     std::ptr::copy_nonoverlapping(src.as_ptr(), dst.as_mut_ptr(), len);
 }
 // unsafe everywhere, loses Rust safety checking value
-```rust
+```
 
 **Right:**
 ```rust
@@ -723,7 +723,7 @@ mod simd_impl {
         dst[..src.len()].copy_from_slice(src);
     }
 }
-```rust
+```
 
 ### Mistake 5: Build-System Over-Engineering (Replicating `build.zig` Complexity in `build.rs`)
 
@@ -738,7 +738,7 @@ fn main() {
     }
     // manually calling cc, manually linking...
 }
-```rust
+```
 
 **Right:**
 ```rust
@@ -755,7 +755,7 @@ fn main() {
 // Cargo.toml uses cfg and features to replace most of build.zig's functionality:
 // [target.'cfg(target_os = "linux")'.dependencies]
 // mio = { version = "1", features = ["os-poll"] }
-```rust
+```
 
 ## Reference Implementations
 

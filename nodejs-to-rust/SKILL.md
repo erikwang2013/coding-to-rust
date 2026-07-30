@@ -12,7 +12,7 @@ Node.js applications run on a single-threaded event loop (libuv) with asynchrono
 
 A Node.js project:
 
-```
+```text
 src/
   index.ts
   routes/
@@ -28,7 +28,7 @@ tsconfig.json
 
 becomes:
 
-```
+```text
 src/
   main.rs
   routes/
