@@ -33,7 +33,7 @@
 | 13 | Kotlin | `kotlin-to-rust/` | Coroutines→tokio tasks, data class→struct, sealed class→enum, Gradle→Cargo |
 | 14 | Swift | `swift-to-rust/` | ARC→ownership, actor→Mutex, protocol→trait, SwiftUI→Leptos |
 | 15 | Ruby | `ruby-to-rust/` | GC→ownership, blocks→closures, Rails→Axum, Bundler→Cargo |
-| 16 | Vue | `vue-to-rust/` | SFC→component functions, ref()→RwSignal, Vite→Trunk |
+| 16 | Vue | `vue-to-rust/` | :warning: **(Frontend / WebAssembly — NOT backend)** SFC→component functions, ref()→RwSignal, Vite→Trunk |
 
 ## Project Architecture
 

@@ -98,7 +98,7 @@ class OrderService
     @db.orders.create(request.to_h.merge(charge_id: charge.id))
   end
 end
-```
+```ruby
 
 ```rust
 // Rust: explicit ownership — data owns its heap allocations
@@ -120,7 +120,7 @@ impl<P: PaymentGateway> OrderService<P> {
         Ok(order)
     }
 }
-```
+```rust
 
 ## Concurrency / Async Translation
 
@@ -157,7 +157,7 @@ Async do
   orders = Async { fetch_orders(id) }
   Dashboard.new(user.wait, orders.wait)
 end
-```
+```ruby
 
 ```rust
 // Rust: tokio join — concurrent futures
@@ -168,7 +168,7 @@ async fn load_dashboard(id: &str) -> Result<Dashboard, AppError> {
     );
     Ok(Dashboard::new(user?, orders?))
 }
-```
+```rust
 
 ## Build System & Dependencies
 
@@ -213,7 +213,7 @@ dotenvy = "0.15"
 reqwest = { version = "0.12", features = ["json"] }
 jsonwebtoken = "9"
 argon2 = "0.5"
-```
+```toml
 
 ## Framework Mapping: Rails → Axum/Actix
 
@@ -293,7 +293,7 @@ class OrderNotifier
     @email.send(to: order.customer_email, subject: "Shipped!", body: body)
   end
 end
-```
+```ruby
 
 ```rust
 // Rust: struct + impl with trait bounds
@@ -315,7 +315,7 @@ impl<E: EmailService, T: TemplateEngine> OrderNotifier<E, T> {
         Ok(())
     }
 }
-```
+```rust
 
 ### 2. Block → Closure / Iterator
 
@@ -327,7 +327,7 @@ def active_user_names(users)
     .map(&:name)
     .sort
 end
-```
+```ruby
 
 ```rust
 // Rust: iterator combinators
@@ -340,7 +340,7 @@ fn active_user_names(users: &[User]) -> Vec<String> {
     names.sort();
     names
 }
-```
+```rust
 
 ### 3. Exception → Result
 
@@ -358,7 +358,7 @@ rescue InsufficientFundsError => e
 ensure
   audit_log.record(from, to, amount)
 end
-```
+```ruby
 
 ```rust
 // Rust: Result with ? operator; Drop replaces ensure
@@ -371,7 +371,7 @@ fn transfer(from: &mut Account, to: &mut Account, amount: f64) -> Result<(), Tra
     to.deposit(amount)?;
     Ok(())
 }
-```
+```rust
 
 ### 4. DSL → Builder Pattern
 
@@ -381,7 +381,7 @@ Rails.application.configure do
   config.cache_classes = true
   config.log_level = :info
 end
-```
+```ruby
 
 ```rust
 // Rust: builder pattern
@@ -399,7 +399,7 @@ let config = AppConfig::builder()
     .cache_classes(true)
     .log_level("info".into())
     .build();
-```
+```rust
 
 ### 5. Mixin → Trait
 
@@ -414,7 +414,7 @@ end
 class Post
   include Timestampable
 end
-```
+```ruby
 
 ```rust
 // Rust: trait with default implementation
@@ -427,7 +427,7 @@ pub trait Timestampable {
 impl Timestampable for Post {
     // inherits default touch() or override
 }
-```
+```rust
 
 
 ### 6. Rails Controller → Axum Handler
@@ -458,7 +458,7 @@ class OrdersController < ApplicationController
     @order = current_user.orders.find(params[:id])
   end
 end
-```
+```ruby
 
 ```rust
 // Rust (Axum): middleware replaces before_action; extractors replace strong params
@@ -492,7 +492,7 @@ let app = Router::new()
     .layer(ServiceBuilder::new()
         .layer(middleware::from_fn(auth_middleware))
         .layer(tower_http::trace::TraceLayer::new_for_http()));
-```
+```rust
 
 ### 7. Sidekiq Worker → Tokio Background Task
 
@@ -518,7 +518,7 @@ end
 
 # Enqueue:
 OrderFulfillmentWorker.perform_async(order.id)
-```
+```ruby
 
 ```rust
 // Rust: tokio task + Redis queue (like Sidekiq)
@@ -572,7 +572,7 @@ async fn process_fulfillment(db: &PgPool, order_id: i64) -> Result<(), AppError>
 for _ in 0..num_workers {
     tokio::spawn(fulfill_order_worker(db.clone(), redis.clone(), sema.clone()));
 }
-```
+```rust
 
 ### 8. ActiveRecord Callbacks → Explicit Middleware / Constructor Validation
 
@@ -600,7 +600,7 @@ class Order < ApplicationRecord
     OrderMailer.confirmation(self).deliver_later
   end
 end
-```
+```ruby
 
 ```rust
 // Rust: explicit pipeline — no implicit callbacks
@@ -675,7 +675,7 @@ async fn place_order(
 
     Ok(order)
 }
-```
+```rust
 
 ## FFI & Incremental Migration
 
@@ -694,7 +694,7 @@ async fn place_order(
 # Ruby: calling Rust via magnus
 require 'my_rust_lib'
 result = MyRustLib.heavy_computation(large_dataset)
-```
+```ruby
 
 ```rust
 // Rust: magnus extension
@@ -710,7 +710,7 @@ fn init(ruby: &Ruby) -> Result<(), Error> {
     module.define_singleton_method("heavy_computation", function!(heavy_computation, 1))?;
     Ok(())
 }
-```
+```rust
 
 ### Migration Order
 
@@ -733,14 +733,14 @@ let name = user.name.unwrap();    // panics if None!
 // CORRECT: propagate with ? or match
 let user = db.find(id)?.ok_or(AppError::NotFound)?;
 let name = user.name.unwrap_or("anonymous".into());
-```
+```rust
 
 ### Mistake 2: Overusing `clone()` (GC Mindset)
 
 ```ruby
 # Ruby: GC handles copying, freely create new objects
 items.each { |item| cache.set(item.id, item.dup) }
-```
+```ruby
 
 ```rust
 // WRONG: cloning everything
@@ -752,7 +752,7 @@ for item in &items {
 for item in &items {
     cache.set(&item.id, item); // borrow key, reference value
 }
-```
+```rust
 
 ### Mistake 3: Trying to Recreate `method_missing`
 
@@ -772,7 +772,7 @@ impl Handler {
         }
     }
 }
-```
+```rust
 
 ### Mistake 4: Mutable String Confusion
 
@@ -781,14 +781,14 @@ impl Handler {
 name = "Alice"
 name << " Smith"  # modifies in place
 name.upcase!      # modifies in place
-```
+```ruby
 
 ```rust
 // Rust: explicit mutability
 let mut name = String::from("Alice");
 name.push_str(" Smith");  // mutates
 let upper = name.to_uppercase();  // new String, name unchanged
-```
+```rust
 
 ## Reference Implementations
 

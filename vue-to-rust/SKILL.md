@@ -4,7 +4,7 @@ description: Use when migrating Vue.js frontends to Rust WASM — covers SFC to 
 updated: 2026-07-30
 ---
 
-# Vue to Rust (WASM) Migration Guide
+# Vue to Rust (WASM) Migration
 
 > **Note**: This skill covers frontend/WASM migration, which is fundamentally different from the backend/runtime language migrations in the other `*-to-rust` skills. While other skills map server-side runtimes (Python, Go, Java, etc.) to Rust native binaries, this skill maps a browser-based frontend framework to Rust compiled to WebAssembly. The target runtimes are Leptos and Dioxus, which run in the browser via WASM, not as native binaries.
 

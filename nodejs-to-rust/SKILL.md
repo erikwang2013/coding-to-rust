@@ -4,6 +4,8 @@ description: Use when migrating Node.js/TypeScript codebases to Rust — covers 
 updated: 2026-07-30
 ---
 
+# Node.js / TypeScript to Rust Migration
+
 ## Architecture Mapping
 
 Node.js applications run on a single-threaded event loop (libuv) with asynchronous, non-blocking I/O. The V8 engine interprets JavaScript and relies on worker threads for CPU-bound work. Rust's equivalent is the `tokio` async runtime, which provides a multi-threaded work-stealing scheduler with the same async/await syntax Node.js developers already know. The conceptual gap is smaller than most expect: both use `async`/`await`, both are non-blocking by default, and both offer process-level parallelism via separate OS threads.

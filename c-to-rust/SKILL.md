@@ -4,6 +4,8 @@ description: Use when migrating C codebases to Rust — covers malloc/free to ow
 updated: 2026-07-30
 ---
 
+# C to Rust Migration
+
 ## Architecture Mapping
 
 C programs follow a procedural paradigm: global mutable state, manual memory management via `malloc`/`free`, header-based interface declarations, and platform-conditional compilation via the preprocessor. Rust replaces each of these with a zero-cost-abstraction equivalent: modules replace headers, ownership replaces manual allocation, `Cargo.toml` replaces Makefiles, and `cfg` attributes replace `#ifdef`. The translation is structural -- C's flat namespace becomes Rust's hierarchical module tree, C's opaque pointer handles become newtype wrappers, and C's `errno`-plus-`goto cleanup` becomes `Result<T, E>` with RAII-based cleanup.

@@ -4,7 +4,7 @@ description: Use when migrating Julia codebases to Rust — covers JIT to AOT co
 updated: 2026-07-30
 ---
 
-# Julia to Rust Migration Guide
+# Julia to Rust Migration
 
 ## Architecture Mapping
 

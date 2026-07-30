@@ -4,7 +4,7 @@ description: Use when migrating R codebases to Rust — covers data.frame to pol
 updated: 2026-07-30
 ---
 
-# R to Rust Migration Guide
+# R to Rust Migration
 
 ## Architecture Mapping
 

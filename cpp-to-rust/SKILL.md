@@ -4,6 +4,8 @@ description: Use when migrating C++ codebases to Rust — covers templates to ge
 updated: 2026-07-30
 ---
 
+# C++ to Rust Migration
+
 ## Architecture Mapping
 
 C++ and Rust share significant architectural DNA: both are systems-level languages with zero-cost abstractions, deterministic resource management, and strong support for generic programming. The key difference is that Rust enforces at compile time what C++ relies on convention, static analysis, and sanitizers to catch. Classes become structs with `impl` blocks; virtual dispatch becomes trait objects; template metaprogramming becomes generics with trait bounds; and RAII -- which C++ pioneered -- is Rust's universal resource management paradigm through `Drop`.

@@ -4,7 +4,7 @@ description: Use when migrating Lua codebases to Rust — covers table to struct
 updated: 2026-07-30
 ---
 
-# Lua to Rust Migration Guide
+# Lua to Rust Migration
 
 ## Architecture Mapping
 
@@ -65,7 +65,7 @@ struct Player {
     age: u32,
     tags: Vec<String>,
 }
-```
+```rust
 
 ## Memory & Ownership Model
 
@@ -104,7 +104,7 @@ impl Drop for Node {
         tracing::debug!("Node dropped");
     }
 }
-```
+```rust
 
 ## Concurrency / Async Translation
 
@@ -135,7 +135,7 @@ fn range_gen(n: u64) -> impl Stream<Item = u64> {
     stream::iter(1..=n)
 }
 // or use async-generator syntax (nightly or genawaiter crate)
-```
+```rust
 
 ### Error-Safe Coroutine Resume
 
@@ -160,7 +160,7 @@ where
 {
     std::panic::catch_unwind(f)
 }
-```
+```rust
 
 ## Build System & Dependencies
 
@@ -194,7 +194,7 @@ thiserror = "2"
 
 [dev-dependencies]
 rstest = "0.22"  # 表驱动测试，类似 busted
-```
+```toml
 
 ## Standard Library & Ecosystem Mapping
 
@@ -270,7 +270,7 @@ location /api/v1/users {
         users.handle_get()
     }
 }
-```
+```nginx
 
 ```rust
 // Rust/Axum: routing in code
@@ -287,7 +287,7 @@ async fn handle_get_users(
 let app = Router::new()
     .route("/api/v1/users", get(handle_get_users))
     .with_state(app_state);
-```
+```rust
 
 ### String Pattern to Regex Translation
 
@@ -309,7 +309,7 @@ fn lua_style_gsub(input: &str) -> String {
     let re = Regex::new(r"-").unwrap();
     re.replace_all(input, "_").to_string()
 }
-```
+```rust
 
 ## Canonical Patterns
 
@@ -331,7 +331,7 @@ pub fn hello(name: &str) -> String {
 // in src/lib.rs or src/main.rs:
 // mod greeting;
 // use greeting::hello;
-```
+```rust
 
 ### Pattern 2: Multi-Return Values
 
@@ -346,7 +346,7 @@ fn find_item(items: &[String], target: &str) -> (bool, Option<usize>) {
         .map_or((false, None), |i| (true, Some(i)))
 }
 // let (found, index) = find_item(&items, "target");
-```
+```rust
 
 ### Pattern 3: Varargs to Generic Slices
 
@@ -374,7 +374,7 @@ macro_rules! sum {
     };
 }
 // let result = sum!(1, 2, 3, 4);
-```
+```rust
 
 ### Pattern 4: Metatable-Based OOP
 
@@ -414,7 +414,7 @@ impl std::ops::Deref for Dog {
     type Target = Animal;
     fn deref(&self) -> &Animal { &self.animal }
 }
-```
+```rust
 
 ### Pattern 5: pcall / xpcall Error Handling
 
@@ -438,7 +438,7 @@ match risky_function() {
 let outcome = risky_function()
     .and_then(|val| another_op(&val))
     .map(|final_val| format!("processed: {final_val}"));
-```
+```rust
 
 ### Pattern 6: Closures Over Upvalues
 
@@ -457,7 +457,7 @@ fn counter() -> impl FnMut() -> i32 {
         count
     }
 }
-```
+```rust
 
 ### Pattern 7: Iterator Generators
 
@@ -487,7 +487,7 @@ impl Iterator for RangeIter {
         }
     }
 }
-```
+```rust
 
 ## FFI & Incremental Migration
 
@@ -535,7 +535,7 @@ fn run_legacy_script() -> mlua::Result<()> {
 
     Ok(())
 }
-```
+```rust
 
 ### Building an Incremental Replacement Pipeline
 
@@ -559,7 +559,7 @@ fn get_first<T>(items: &[T]) -> &T {
 fn get_first<T>(items: &[T]) -> Option<&T> {
     items.first()  // Rust arrays and slices start at 0
 }
-```
+```rust
 
 ### Mistake 2: Overusing Rc<RefCell<T>> — Lua GC Emulation
 
@@ -575,7 +575,7 @@ struct AppState {
     // each module owns its own data
 }
 // use Arc<RwLock<T>> only where sharing is needed, not globally
-```
+```rust
 
 ### Mistake 3: String Concatenation in Hot Loops
 
@@ -591,7 +591,7 @@ let result = items.iter()
     .map(|s| s.as_str())
     .collect::<Vec<_>>()
     .join(",");
-```
+```rust
 
 ### Mistake 4: Using panic! Instead of Result for Recoverable Errors
 
@@ -608,7 +608,7 @@ fn load_config(path: &str) -> Result<Config, Box<dyn std::error::Error>> {
     let config = serde_json::from_str(&content)?;
     Ok(config)
 }
-```
+```rust
 
 ### Mistake 5: Assuming Nil/None Semantics in Collections
 
@@ -620,7 +620,7 @@ items[5] = Some("hello".into()); // index out of bounds panic
 // CORRECT — use HashMap for sparse collections:
 let mut items: HashMap<usize, String> = HashMap::new();
 items.insert(5, "hello".into()); // safe and semantically correct
-```
+```rust
 
 ## Reference Implementations
 
