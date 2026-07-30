@@ -29,3 +29,14 @@
 [2026-07-30T05:21:02.753Z] [INFO] Worker map completed in 57ms
 [2026-07-30T05:25:02.688Z] [INFO] Starting worker: optimize (1/2 concurrent)
 [2026-07-30T05:25:02.690Z] [INFO] Worker optimize completed in 2ms
+[2026-07-30T05:28:02.692Z] [INFO] Worker audit deferred: CPU load too high: 9.68
+[2026-07-30T05:34:02.688Z] [INFO] Starting worker: testgaps (1/2 concurrent)
+[2026-07-30T05:34:02.690Z] [INFO] Worker testgaps completed in 3ms
+[2026-07-30T05:34:02.774Z] [INFO] Starting worker: audit (1/2 concurrent)
+[2026-07-30T05:34:02.775Z] [INFO] Worker audit completed in 2ms
+[2026-07-30T05:36:02.757Z] [INFO] Starting worker: map (1/2 concurrent)
+[2026-07-30T05:36:02.758Z] [INFO] Worker map completed in 2ms
+[2026-07-30T05:38:02.695Z] [INFO] Starting worker: audit (1/2 concurrent)
+[2026-07-30T05:38:02.696Z] [INFO] Worker audit completed in 1ms
+[2026-07-30T05:40:02.697Z] [INFO] Starting worker: optimize (1/2 concurrent)
+[2026-07-30T05:40:02.698Z] [INFO] Worker optimize completed in 2ms

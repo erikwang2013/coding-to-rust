@@ -235,7 +235,7 @@ lto = "fat"
 codegen-units = 1    # 最大化优化（类似 Julia 的 @code_native 输出）
 ```
 
-## Standard / Popular Library Mapping
+## Standard Library & Ecosystem Mapping
 
 | Julia Library | Rust Equivalent |
 |---|---|

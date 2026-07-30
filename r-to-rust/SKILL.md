@@ -227,7 +227,7 @@ approx = "0.5"  # 浮点数近似断言，类似 all.equal()
 rstest = "0.22"
 ```
 
-## Standard / Popular Library Mapping
+## Standard Library & Ecosystem Mapping
 
 | R Library | Rust Equivalent |
 |---|---|

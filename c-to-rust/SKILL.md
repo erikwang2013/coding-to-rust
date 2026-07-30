@@ -107,7 +107,7 @@ C's model is **programmer-managed**: you `malloc`, you `free`. Rust's model is *
 | Compiler warning flags | `#![deny(unsafe_code)]` / clippy lints | Opt-in lint levels in `Cargo.toml` and source attributes |
 | `-O2` / `-O3` | `[profile.release]` section in `Cargo.toml` | opt-level, lto, codegen-units, panic = "abort" |
 
-## Standard Library Mapping
+## Standard Library & Ecosystem Mapping
 
 | C Standard Library | Rust Equivalent | Notes |
 |--------------------|-----------------|-------|
@@ -636,7 +636,10 @@ fn generic_push_trait<T: Clone>(vec: &mut Vec<T>, value: &T) {
 
 ## Cross-Reference
 
-- `cpp-to-rust`: For C++ codebases with templates, virtual dispatch, and RAII patterns
-- `zig-to-rust`: For comptime-heavy code and custom allocator patterns
+- **cpp-to-rust**: For C++ codebases with templates, virtual dispatch, and RAII patterns
+- **zig-to-rust**: For comptime-heavy code and custom allocator patterns
+- **python-to-rust**: For C extension replacement via PyO3/cbindgen; shared FFI bridge patterns
+- **go-to-rust**: For cgo-to-FFI migration and C/Go hybrid codebase patterns
+- **nodejs-to-rust**: For N-API/native addon migration; replacing C modules with napi-rs
 - For FFI details: see `std::ffi` module documentation and the `bindgen` / `cbindgen` crate docs
 - For build integration: see the `cc` crate for compiling C sources from `build.rs`

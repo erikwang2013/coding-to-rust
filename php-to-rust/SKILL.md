@@ -341,7 +341,7 @@ validator = { version = "0.18", features = ["derive"] }
 | Artisan Console (`make:`)    | No equivalent; manual module creation   | Create files, add `mod` declaration     |
 | `php artisan serve`          | `cargo run`                             | Direct binary execution                 |
 
-## Standard Library & Utility Mapping
+## Standard Library & Ecosystem Mapping
 
 | PHP Function / Pattern          | Rust Equivalent                       | Notes                                   |
 |---------------------------------|---------------------------------------|-----------------------------------------|

@@ -264,7 +264,7 @@ uuid = { version = "1", features = ["v4", "serde"] }
 validator = { version = "0.18", features = ["derive"] }
 ```
 
-## Standard Library & Framework Mapping
+## Standard Library & Ecosystem Mapping
 
 ### Spring Boot -> Axum / Actix-Web
 

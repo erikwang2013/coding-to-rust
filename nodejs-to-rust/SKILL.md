@@ -44,7 +44,7 @@ Cargo.toml
 
 The critical architectural difference: Node.js naturally allows shared mutable state (closures, module-level variables) because JavaScript's event loop guarantees no concurrent access. Rust requires explicit synchronization (`Arc<Mutex<T>>`, channels) when state is shared across concurrent tasks. This is the single biggest mindset shift for Node.js developers.
 
-## Type System Mapping (TypeScript to Rust)
+## Type System Mapping
 
 | TypeScript Type | Rust Type | Notes |
 |-----------------|-----------|-------|
@@ -81,7 +81,7 @@ The critical architectural difference: Node.js naturally allows shared mutable s
 | `Date` | `chrono::DateTime<Utc>` / `time::OffsetDateTime` | Use `chrono` or `time` crate |
 | `RegExp` | `regex::Regex` | Compile regex once; `Regex::new(...).unwrap()` |
 
-## Memory & Ownership: Shared State in a Concurrent World
+## Memory & Ownership Model
 
 Node.js's single-threaded event loop means that module-level variables, closures, and object properties are inherently safe -- only one function runs at a time. Rust's `tokio` is multi-threaded by default, so any state shared across `.await` points must be explicitly synchronized.
 
@@ -144,7 +144,7 @@ Node.js's single-threaded event loop means that module-level variables, closures
 | `chai` / `expect` assertions | Built-in `assert!` / `assert_eq!` / `assert_ne!` | Macro-based assertions; no chaining API |
 | `nyc` / `istanbul` coverage | `cargo-tarpaulin` / `grcov` | Code coverage with source-based instrumentation |
 
-## Standard Library / Ecosystem Mapping
+## Standard Library & Ecosystem Mapping
 
 ### Core APIs
 
@@ -849,8 +849,12 @@ fn handle(data: Data) {
 
 ## Cross-Reference
 
-- `c-to-rust`: For C dependencies that your Node.js native addons depend on
-- `cpp-to-rust`: For C++ addon patterns and FFI migration
+- **c-to-rust**: For C dependencies that your Node.js native addons depend on
+- **cpp-to-rust**: For C++ addon patterns and FFI migration
+- **python-to-rust**: For shared dynamic-to-static typing patterns; npm/pip to Cargo dependency mapping
+- **go-to-rust**: For event-loop to tokio concurrency model translation; similar web framework migration
+- **java-to-rust**: For enterprise TypeORM/Prisma to Diesel/sqlx ORM migration patterns
+- **php-to-rust**: For Express/Fastify to Axum web framework migration; shared middleware patterns
 - For HTTP frameworks: `axum` (ergonomic, tokio-native), `actix-web` (battle-tested, actor-based), `poem` (ergonomic, OpenAPI-native)
 - For database: `sqlx` (async, compile-time SQL checking), `diesel` (sync, strong type guarantees), `sea-orm` (async ORM)
 - For gRPC: `tonic` (async, tokio-native gRPC server/client)

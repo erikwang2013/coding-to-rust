@@ -142,7 +142,7 @@ C++11+ modern memory management (RAII, smart pointers, move semantics) translate
 | `valgrind` | Miri (`cargo +nightly miri test`) | UB detection for unsafe code; Valgrind still useful for FFI |
 | Compiler Explorer (godbolt.org) | `cargo asm` / `cargo-show-asm` | Inspect generated assembly |
 
-## Standard Library Mapping
+## Standard Library & Ecosystem Mapping
 
 | C++ Standard Library | Rust Equivalent | Notes |
 |----------------------|-----------------|-------|
@@ -795,8 +795,11 @@ impl Cache {
 
 ## Cross-Reference
 
-- `c-to-rust`: For C codebases with manual memory management and raw pointers
-- `nodejs-to-rust`: For Node.js backends with async event loop patterns
+- **c-to-rust**: For C codebases with manual memory management and raw pointers
+- **zig-to-rust**: For comptime-to-proc-macro and custom allocator patterns in systems code
+- **nodejs-to-rust**: For Node.js native addon (node-addon-api) migration patterns
+- **python-to-rust**: For PyO3/C++ extension replacement; shared template-to-generic patterns
+- **java-to-rust**: For JNI-to-FFI migration of native libraries
 - For C++ FFI details: `cxx` crate documentation at https://cxx.rs
 - For build integration: `cc` crate for compiling C++ from `build.rs`; `cmake` crate for CMake-based deps
 - For migrating large class hierarchies: consider the `enum_dispatch` crate for zero-cost dynamic dispatch

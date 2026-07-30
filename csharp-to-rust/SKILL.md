@@ -321,7 +321,7 @@ tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
 dotenvy = "0.15"
 ```
 
-## Standard Library & Framework Mapping
+## Standard Library & Ecosystem Mapping
 
 ### ASP.NET Core -> Axum / Actix-Web
 

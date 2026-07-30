@@ -196,7 +196,7 @@ thiserror = "2"
 rstest = "0.22"  # 表驱动测试，类似 busted
 ```
 
-## Standard / Popular Library Mapping
+## Standard Library & Ecosystem Mapping
 
 | Lua Library / Function | Rust Equivalent |
 |---|---|

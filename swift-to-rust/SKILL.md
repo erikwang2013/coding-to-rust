@@ -196,7 +196,7 @@ jsonwebtoken = "9"
 argon2 = "0.5"
 ```
 
-## Standard Library & Framework Mapping
+## Standard Library & Ecosystem Mapping
 
 ### Vapor / Hummingbird → Axum / Actix-Web
 
@@ -237,6 +237,20 @@ argon2 = "0.5"
 | `FileManager.default` | `std::fs` (read, write, create_dir_all) |
 | `UserDefaults` | `dirs` crate + serde JSON |
 | `NotificationCenter.default` | `tokio::sync::broadcast` channel |
+| `array.sorted { $0 < $1 }` | `vec.iter().sorted()` (itertools) / `vec.sort()` |
+| `array.contains(where: { })` | `vec.iter().any(|x| ...)` |
+| `array.allSatisfy { $0 > 0 }` | `vec.iter().all(|&x| x > 0)` |
+| `array.enumerated()` | `vec.iter().enumerate()` |
+| `array.reversed()` | `vec.iter().rev()` |
+| `Set(array1).intersection(Set(array2))` | `HashSet::intersection` / `BTreeSet::intersection` |
+| `Dictionary(uniqueKeysWithValues:)` | `.collect::<HashMap<_, _>>()` |
+| `Optional.map { }` / `.flatMap { }` | `.map()` / `.and_then()` on Option |
+| `str.lowercased()` / `.uppercased()` | `s.to_lowercase()` / `s.to_uppercase()` |
+| `str.localizedStandardContains()` | `s.to_lowercase().contains(sub)` (no locale-aware) |
+| `Measurement<Unit>` / `UnitLength` | `uom` crate (type-safe units of measure) |
+| `ProcessInfo.processInfo.environment` | `std::env::var("KEY")` / `dotenvy` |
+| `FileManager.createDirectory(atPath:)` | `std::fs::create_dir_all(path)` |
+| `DispatchQueue.main.async { }` | `tokio::task::spawn_blocking` or main-thread channel |
 
 ## Canonical Patterns
 
@@ -402,6 +416,86 @@ fn UserRow(user: User) -> impl IntoView {
 }
 ```
 
+### 6. Combine Publisher → futures::Stream
+
+```swift
+// Swift: Combine — reactive stream processing
+class SearchViewModel {
+    @Published var query = ""
+    var results: AnyPublisher<[Item], Never> {
+        $query
+            .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
+            .removeDuplicates()
+            .filter { $0.count >= 2 }
+            .flatMap { api.search($0) }
+            .eraseToAnyPublisher()
+    }
+}
+```
+
+```rust
+// Rust: futures::Stream with tokio
+use futures::{StreamExt, stream};
+use tokio::sync::mpsc;
+use std::time::Duration;
+
+fn search_stream(
+    query_rx: mpsc::UnboundedReceiver<String>,
+    api: Arc<ApiClient>,
+) -> impl Stream<Item = Result<Vec<Item>, Error>> {
+    stream::unfold(query_rx, move |mut rx| {
+        let api = api.clone();
+        async move {
+            let query = rx.recv().await?;
+            if query.len() < 2 { return Some((Ok(vec![]), rx)); }
+            let results = api.search(&query).await;
+            let item = results.map_err(|e| Error::Api(e.to_string()));
+            Some((item, rx))
+        }
+    })
+    .throttle(Duration::from_millis(300)) // debounce approximation
+}
+```
+
+### 7. CoreData / GRDB → sqlx
+
+```swift
+// Swift: CoreData fetch + relationship traversal
+func fetchUserOrders(context: NSManagedObjectContext, userId: UUID) throws -> [Order] {
+    let request: NSFetchRequest<UserEntity> = UserEntity.fetchRequest()
+    request.predicate = NSPredicate(format: "id == %@", userId as CVarArg)
+    guard let user = try context.fetch(request).first else { throw AppError.notFound }
+    return user.orders?.compactMap { Order.from(entity: $0 as! OrderEntity) } ?? []
+}
+```
+
+```rust
+// Rust: sqlx with JOIN — no ORM graph traversal needed
+async fn fetch_user_orders(pool: &PgPool, user_id: Uuid) -> Result<Vec<Order>, AppError> {
+    let orders = sqlx::query_as::<_, Order>(
+        "SELECT o.* FROM orders o WHERE o.user_id = $1 ORDER BY o.created_at DESC"
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await?;
+    Ok(orders)
+}
+
+// With relationship: single JOIN query
+async fn fetch_orders_with_items(pool: &PgPool, user_id: Uuid) -> Result<Vec<OrderWithItems>, AppError> {
+    let rows = sqlx::query_as::<_, OrderRow>(
+        "SELECT o.*, oi.id as item_id, oi.name as item_name
+         FROM orders o
+         LEFT JOIN order_items oi ON oi.order_id = o.id
+         WHERE o.user_id = $1"
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await?;
+    Ok(group_into_orders(rows))
+}
+```
+
 ## FFI & Incremental Migration
 
 Swift's C interoperability (via module maps, bridging headers, and `@_cdecl`) enables Rust-Swift FFI through the C ABI.
@@ -480,6 +574,65 @@ Task { await self.updateUI() }
 let self_arc = Arc::new(self);
 let self_clone = self_arc.clone();
 tokio::spawn(async move { self_clone.update().await });
+```
+
+### Mistake 5: Assuming Swift Struct CoW = Rust Clone
+
+```swift
+// Swift: structs use copy-on-write internally for large collections
+var a = [1, 2, 3, 4, 5, 6, 7, 8]
+let b = a          // cheap — CoW, no actual copy yet
+a.append(9)        // copy happens here
+// b is still [1,2,3,4,5,6,7,8]
+```
+
+```rust
+// Rust: Clone is always explicit and always copies
+let a = vec![1, 2, 3, 4, 5, 6, 7, 8];
+let b = a.clone(); // eager heap allocation — no CoW
+// a is still usable; a and b are independent
+
+// For zero-cost shared access, borrow instead:
+let a = vec![1, 2, 3, 4, 5, 6, 7, 8];
+let b = &a;        // borrow — no copy at all
+// but a cannot be mutated while b exists
+```
+
+### Mistake 6: Expecting `@objc`-style Dynamic Dispatch
+
+```swift
+// Swift: @objc enables runtime method lookup
+@objc protocol Delegate {
+    @objc optional func didUpdate()
+}
+
+func notify(_ delegate: Delegate) {
+    delegate.didUpdate?() // runtime check
+}
+```
+
+```rust
+// WRONG: trying to replicate optional protocol methods
+// Rust has no @objc-style runtime method lookup
+
+// CORRECT: use trait + default empty implementation
+pub trait Delegate {
+    fn did_update(&self) {} // default no-op
+}
+
+fn notify(delegate: &dyn Delegate) {
+    delegate.did_update(); // compile-time dispatch
+}
+
+// Or for truly dynamic behavior, use enum dispatch:
+enum Notification {
+    DidUpdate,
+    DidFail(String),
+}
+
+fn notify(handler: fn(&Notification)) {
+    handler(&Notification::DidUpdate);
+}
 ```
 
 ## Reference Implementations

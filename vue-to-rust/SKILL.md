@@ -6,6 +6,8 @@ updated: 2026-07-30
 
 # Vue to Rust (WASM) Migration Guide
 
+> **Note**: This skill covers frontend/WASM migration, which is fundamentally different from the backend/runtime language migrations in the other `*-to-rust` skills. While other skills map server-side runtimes (Python, Go, Java, etc.) to Rust native binaries, this skill maps a browser-based frontend framework to Rust compiled to WebAssembly. The target runtimes are Leptos and Dioxus, which run in the browser via WASM, not as native binaries.
+
 ## Architecture Mapping
 
 Vue's reactive component model (Vue SFC with `<template>`/`<script>`/`<style>`, reactivity via `ref()`/`reactive()`, virtual DOM diffing) maps to Rust WASM frameworks (Leptos, Dioxus, Yew) that compile to WebAssembly and run in the browser at near-native speed. Where Vue relies on JavaScript's runtime type system and V8's JIT compilation, Rust WASM frameworks use AOT-compiled Rust with fine-grained reactivity (signals) and zero-cost iterator-based rendering — no virtual DOM overhead in Leptos/Dioxus.
@@ -228,7 +230,7 @@ lto = true
 codegen-units = 1
 ```
 
-## Standard / Popular Library Mapping
+## Standard Library & Ecosystem Mapping
 
 | Vue / JS Library | Rust Equivalent |
 |---|---|

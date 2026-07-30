@@ -217,7 +217,7 @@ anyhow = "1"
 thiserror = "2"
 ```
 
-## Standard Library Mapping
+## Standard Library & Ecosystem Mapping
 
 | Go stdlib                          | Rust crate / std                        | Notes                                   |
 |------------------------------------|-----------------------------------------|-----------------------------------------|

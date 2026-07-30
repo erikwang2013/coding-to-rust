@@ -24,10 +24,10 @@ This is the entry point for migrating code from any source language to Rust. It 
 | **JavaScript / TypeScript** | [nodejs-to-rust](#javascript--typescript-to-rust) | Event loop to tokio, V8 to AOT, npm to Cargo |
 | **Go** | [go-to-rust](#go-to-rust) | Goroutines to tokio tasks, channels to mpsc, GC to ownership |
 | **Java** | [java-to-rust](#java-to-rust) | JVM to native binary, Spring to Axum, JPA to sqlx |
-| **C#** | [csharp-to-rust](#c-to-rust-1) | CLR to native, LINQ to iterators, EF Core to Diesel/sqlx |
+| **C#** | [csharp-to-rust](#csharp-to-rust) | CLR to native, LINQ to iterators, EF Core to Diesel/sqlx |
 | **PHP** | [php-to-rust](#php-to-rust) | Dynamic typing to static types, FPM to long-lived process, Composer to Cargo |
 | **C** | [c-to-rust](#c-to-rust) | malloc/free to ownership, pointers to references, headers to modules |
-| **C++** | [cpp-to-rust](#c-to-rust-2) | Templates to generics, virtual to trait objects, move semantics to ownership |
+| **C++** | [cpp-to-rust](#cpp-to-rust) | Templates to generics, virtual to trait objects, move semantics to ownership |
 | **Zig** | [zig-to-rust](#zig-to-rust) | comptime to proc macros, allocator to ownership, error sets to Result |
 | **Lua** | [lua-to-rust](#lua-to-rust) | Table to struct/enum, metatable OOP to traits, coroutine to async |
 | **R** | [r-to-rust](#r-to-rust) | data.frame to polars, formula to builder pattern, apply to iterators |
@@ -35,7 +35,7 @@ This is the entry point for migrating code from any source language to Rust. It 
 | **Kotlin** | [kotlin-to-rust](#kotlin-to-rust) | Coroutines to tokio, data class to struct, sealed class to enum, Gradle to Cargo |
 | **Swift** | [swift-to-rust](#swift-to-rust) | ARC to ownership, actor to Mutex, protocol to trait, SwiftUI to Leptos |
 | **Ruby** | [ruby-to-rust](#ruby-to-rust) | GC to ownership, blocks to closures, Rails to Axum, Bundler to Cargo |
-| **Vue** | [vue-to-rust](#vue-to-rust-wasm) | SFC to component functions, ref() to RwSignal, Vite to Trunk |
+| **Vue** | [vue-to-rust](#vue-to-rust-wasm) | **(Frontend/WASM)** SFC to component functions, ref() to RwSignal, Vite to Trunk |
 
 ## Universal Migration Concepts
 
@@ -151,6 +151,7 @@ Every source language except C, C++, Zig, and Swift (which uses ARC) has a garba
 
 → Full guide: `java-to-rust`
 
+<a id="csharp-to-rust"></a>
 ### C# to Rust
 
 | C# | Rust | Quick Note |
@@ -196,6 +197,7 @@ Every source language except C, C++, Zig, and Swift (which uses ARC) has a garba
 
 → Full guide: `c-to-rust`
 
+<a id="cpp-to-rust"></a>
 ### C++ to Rust
 
 | C++ | Rust | Quick Note |

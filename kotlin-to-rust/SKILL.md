@@ -201,7 +201,7 @@ tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
 reqwest = { version = "0.12", features = ["json"] }
 ```
 
-## Standard Library & Framework Mapping
+## Standard Library & Ecosystem Mapping
 
 ### Ktor / Spring Boot → Axum / Actix-Web
 
@@ -242,6 +242,17 @@ reqwest = { version = "0.12", features = ["json"] }
 | `checkNotNull(x)` | `x.expect("must not be null")` |
 | `TODO()` / `error("msg")` | `todo!()` / `panic!("msg")` |
 | `runCatching { }.getOrElse { }` | `fallible_fn().unwrap_or_else(|e| ...)` |
+| `list.sortedBy { it.name }` | `vec.iter().sorted_by(|a,b| a.name.cmp(&b.name))` (itertools) |
+| `list.distinct()` / `list.distinctBy { }` | `vec.iter().unique()` (itertools) / `unique_by` |
+| `list.zip(other) { a,b -> }` | `a.iter().zip(b.iter()).map(|(x,y)| ...)` |
+| `list.joinToString(", ")` | `vec.iter().join(", ")` (itertools) / `itertools::join` |
+| `list.windowed(size, step)` | `vec.windows(size)` / `itertools::tuple_windows` |
+| `let { }` / `also { }` | `let x = expr; f(&x); x` (no inline scope function) |
+| `apply { }` (builder scope) | Method chaining / `typed_builder` crate |
+| `String?.isNullOrBlank()` | `s.map(|s| s.is_empty()).unwrap_or(true)` |
+| `"123".toIntOrNull()` | `"123".parse::<i32>().ok()` |
+| `list.sumOf { it.price }` / `maxOf { }` | `vec.iter().map(|x| x.price).sum()` / `max_by` |
+| `repeat(times) { }` | `(0..n).for_each(|_| { ... })` |
 
 ## Canonical Patterns
 
@@ -400,6 +411,99 @@ let req = QueryRequest::builder()
     .build(); // compile error if required fields are missing
 ```
 
+### 6. Flow<T> → Stream Processing
+
+```kotlin
+// Kotlin: Flow for cold async streams
+fun searchUsers(query: String): Flow<User> = flow {
+    emitAll(cache.search(query))
+    if (query.length >= 3) {
+        emitAll(api.search(query))
+    }
+}.flowOn(Dispatchers.IO)
+```
+
+```rust
+// Rust: async_stream or futures::Stream
+use async_stream::stream;
+use futures::StreamExt;
+
+fn search_users(query: &str, cache: &Cache, api: &Api) -> impl Stream<Item = Result<User, Error>> {
+    let query = query.to_string();
+    stream! {
+        for user in cache.search(&query).await? {
+            yield Ok(user);
+        }
+        if query.len() >= 3 {
+            for user in api.search(&query).await? {
+                yield Ok(user);
+            }
+        }
+    }
+}
+```
+
+### 7. Spring Boot @Service → Axum State Handler
+
+```kotlin
+// Kotlin: Spring Boot service with DI
+@Service
+class OrderService(
+    private val orderRepo: OrderRepository,
+    private val paymentGateway: PaymentGateway,
+) {
+    @Transactional
+    suspend fun placeOrder(req: OrderRequest): Order {
+        val order = orderRepo.save(req.toOrder())
+        paymentGateway.charge(req.amount, req.token)
+        return orderRepo.confirm(order.id)
+    }
+}
+
+@RestController
+class OrderController(private val service: OrderService) {
+    @PostMapping("/orders")
+    suspend fun create(@RequestBody req: OrderRequest) = service.placeOrder(req)
+}
+```
+
+```rust
+// Rust: explicit state with Axum
+use axum::{Router, routing::post, extract::State, Json};
+use sqlx::PgPool;
+
+pub struct AppState {
+    db: PgPool,
+    payment: PaymentGateway,
+}
+
+async fn create_order(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<OrderRequest>,
+) -> Result<Json<Order>, AppError> {
+    let mut tx = state.db.begin().await?;
+    let order = sqlx::query_as::<_, Order>(
+        "INSERT INTO orders (...) VALUES (...) RETURNING *"
+    )
+    .bind(&req.customer_id)
+    .fetch_one(&mut *tx)
+    .await?;
+    state.payment.charge(req.amount, &req.token).await?;
+    sqlx::query("UPDATE orders SET confirmed = true WHERE id = $1")
+        .bind(&order.id)
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
+    Ok(Json(order))
+}
+
+// Router setup — no DI container needed
+let state = Arc::new(AppState { db: pool, payment: gateway });
+let app = Router::new()
+    .route("/orders", post(create_order))
+    .with_state(state);
+```
+
 ## FFI & Incremental Migration
 
 Kotlin/JVM-to-Rust migration typically proceeds service-by-service or via JNI for incremental replacement within the same JVM process.
@@ -487,6 +591,58 @@ guard.update();
 drop(guard); // explicit drop before next .await
 ```
 
+### Mistake 5: Overusing `object` / Singleton Pattern
+
+```kotlin
+// Kotlin: object declaration — thread-safe lazy singleton
+object AppConfig {
+    val apiUrl: String by lazy { System.getenv("API_URL") ?: "http://localhost" }
+    val maxRetries: Int = 3
+}
+```
+
+```rust
+// WRONG: trying to mirror Kotlin's object with global static mut
+// static mut CONFIG: Option<Config> = None; // unsafe, not thread-safe!
+
+// CORRECT: use OnceLock for lazy, thread-safe singletons
+use std::sync::OnceLock;
+
+static CONFIG: OnceLock<AppConfig> = OnceLock::new();
+
+pub fn config() -> &'static AppConfig {
+    CONFIG.get_or_init(|| AppConfig::from_env())
+}
+
+// For complex initialization: LazyLock (Rust 1.80+)
+use std::sync::LazyLock;
+static CONFIG: LazyLock<AppConfig> = LazyLock::new(|| AppConfig::from_env());
+```
+
+### Mistake 6: Expecting Reified Generics (Runtime Type Info)
+
+```kotlin
+// Kotlin: reified generics preserve type at runtime
+inline fun <reified T> decode(json: String): T = Json.decodeFromString(json)
+
+val user = decode<User>("""{"name":"Alice"}""") // T known at runtime
+```
+
+```rust
+// Rust: generics are monomorphized at compile time — no runtime type info
+// Use trait dispatch or serde's DeserializeOwned instead
+
+// CORRECT: trait bounds for compile-time dispatch
+fn decode<T: DeserializeOwned>(json: &str) -> Result<T, serde_json::Error> {
+    serde_json::from_str(json)
+}
+
+// For truly dynamic types, use serde_json::Value or enum dispatch
+fn decode_dynamic(json: &str) -> Result<Value, serde_json::Error> {
+    serde_json::from_str(json)
+}
+```
+
 ## Reference Implementations
 
 | Project | Description | Pattern |
@@ -502,4 +658,5 @@ drop(guard); // explicit drop before next .await
 - **java-to-rust**: Shared JVM ecosystem patterns; Spring Boot migration parallels with Ktor
 - **go-to-rust**: Goroutine/coroutine async patterns; shared M:N scheduling concepts
 - **csharp-to-rust**: .NET/Kotlin enterprise patterns; async/await translation
+- **swift-to-rust**: Mobile ecosystem counterpart (Android/Java ↔ iOS/Swift); shared modern language features
 - **cpp-to-rust**: Kotlin/Native interop via C ABI; systems-level FFI strategies

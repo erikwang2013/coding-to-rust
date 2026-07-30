@@ -138,7 +138,7 @@ Zig's concurrency model is still evolving (no stable async/await). Rust has a ma
 | `exe.setBuildMode(.ReleaseSmall)` | `[profile.release]` with `opt-level = "s"`, `lto = true` | Size-optimized |
 | `exe.setTarget(target)` (cross-compilation) | `--target x86_64-unknown-linux-musl` + `.cargo/config.toml` | Cross-compilation via target triple |
 
-## Standard Library Mapping
+## Standard Library & Ecosystem Mapping
 
 | Zig Standard Library | Rust Equivalent | Notes |
 |---------------------|-----------------|-------|
