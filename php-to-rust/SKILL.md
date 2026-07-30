@@ -87,29 +87,29 @@ PHP's reference-counted, copy-on-write memory model with garbage collection is t
 ### The Copy-on-Write to Ownership Shift
 
 ```php
-// PHP: COW（写时复制）——变量共享底层值直到被修改
+// PHP: COW (Copy-on-Write) — variables share underlying value until mutated
 $a = "hello";              // zval refcount = 1
-$b = $a;                   // zval refcount = 2（共享）
+$b = $a;                   // zval refcount = 2 (shared)
 $a = "world";              // zval refcount = 1 on new string
-// $b 仍然是 "hello"
+// $b is still "hello"
 ```
 
 ```rust
-// Rust: 所有权——Move 语义，不复制的共享通过借用
-let a = String::from("hello");  // a 拥有字符串
-let b = a;                       // b 现在拥有字符串，a 不再有效
-// println!("{a}");              // 编译错误：a 已被移动
+// Rust: Ownership — Move semantics; sharing without copying uses borrowing
+let a = String::from("hello");  // a owns the string
+let b = a;                       // b now owns the string, a is no longer valid
+// println!("{a}");              // compile error: a was moved
 
-// 需要共享时显式借用
+// explicitly borrow when sharing is needed
 let a = String::from("hello");
-let b = &a;                      // b 借用 a
-println!("{a} {b}");            // 两者都可用
+let b = &a;                      // b borrows a
+println!("{a} {b}");            // both are usable
 ```
 
 ### PHP Array Shapes -> Rust Structs / Enums
 
 ```php
-// PHP: 数组被当作万能数据结构
+// PHP: arrays used as universal data structure
 function getUser(int $id): array {
     return [
         'id' => 1,
@@ -125,7 +125,7 @@ function getUser(int $id): array {
 ```
 
 ```rust
-// Rust: 每个数据形状对应一个具体类型
+// Rust: each data shape gets a concrete type
 use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize)]
@@ -144,7 +144,7 @@ pub struct Profile {
 }
 
 fn get_user(id: i64) -> Result<User, UserError> {
-    // 编译期保证返回类型符合结构定义
+    // compiler guarantees return type matches struct definition
     Ok(User {
         id: 1,
         name: "Alice".into(),
@@ -177,7 +177,7 @@ PHP is traditionally single-threaded per request (with extensions like Swoole or
 ### Synchronous -> Async Execution
 
 ```php
-// PHP: 同步 ORM 查询（PDO/Doctrine）
+// PHP: synchronous ORM queries (PDO/Doctrine)
 public function getOrderSummary(int $orderId): array
 {
     $order = $this->db->query(
@@ -204,7 +204,7 @@ public function getOrderSummary(int $orderId): array
 ```
 
 ```rust
-// Rust: 并发查询——三个查询并行执行
+// Rust: concurrent queries — three queries run in parallel
 async fn get_order_summary(
     pool: &PgPool,
     order_id: i64,
@@ -235,7 +235,7 @@ async fn get_order_summary(
 ### PHP Fiber -> Rust Async Task
 
 ```php
-// PHP 8.1+: Fiber（协作式并发）
+// PHP 8.1+: Fiber (cooperative concurrency)
 $fiber = new Fiber(function () use ($data): void {
     $result = Fiber::suspend(processPart1($data));
     $final = processPart2($result);
@@ -247,9 +247,9 @@ $final = $fiber->resume($part1);
 ```
 
 ```rust
-// Rust: async/await（同样协作式，但有运行时调度）
+// Rust: async/await (also cooperative, with runtime scheduling)
 async fn process(data: Data) -> Result<Final, Error> {
-    let result = process_part1(&data).await?; // .await 点 = 让出点
+    let result = process_part1(&data).await?; // .await point = yield point
     process_part2(result).await
 }
 
@@ -403,7 +403,7 @@ validator = { version = "0.18", features = ["derive"] }
 ### 1. Dynamic Array Shape -> Struct
 
 ```php
-// PHP: 数组作为万能数据结构——无编译期保证
+// PHP: arrays as universal data structure — no compile-time guarantees
 function formatUser(array $user): array {
     return [
         'display' => $user['first_name'] . ' ' . $user['last_name'],
@@ -414,7 +414,7 @@ function formatUser(array $user): array {
 ```
 
 ```rust
-// Rust: 每个形状都是具体类型——编译期保证正确性
+// Rust: each shape is a concrete type — compile-time correctness
 struct UserInput {
     first_name: String,
     last_name: String,
@@ -440,7 +440,7 @@ fn format_user(user: &UserInput) -> UserDisplay {
 ### 2. PHP Exception -> Rust Result
 
 ```php
-// PHP: try/catch 异常——非显式控制流
+// PHP: try/catch exceptions — non-explicit control flow
 public function transferFunds(Account $from, Account $to, Money $amount): void
 {
     if ($from->balance < $amount) {
@@ -456,7 +456,7 @@ public function transferFunds(Account $from, Account $to, Money $amount): void
     try {
         $this->gateway->credit($to, $amount);
     } catch (PaymentException $e) {
-        // 需要回滚 debit——异常控制流使这变得脆弱
+        // need to rollback debit — exception-based control flow makes this fragile
         $this->gateway->refund($from, $amount);
         throw new TransferFailedException('credit failed', 0, $e);
     }
@@ -464,7 +464,7 @@ public function transferFunds(Account $from, Account $to, Money $amount): void
 ```
 
 ```rust
-// Rust: Result —— 错误是值，不是控制流
+// Rust: Result — errors are values, not control flow
 #[derive(Error, Debug)]
 enum TransferError {
     #[error("insufficient funds in account {0}")]
@@ -483,12 +483,12 @@ async fn transfer_funds(
         return Err(TransferError::InsufficientFunds(from.id.clone()));
     }
 
-    gateway.debit(from, amount).await?; // ? 传播错误
+    gateway.debit(from, amount).await?; // ? propagates the error
 
     match gateway.credit(to, amount).await {
         Ok(()) => Ok(()),
         Err(e) => {
-            // 明确的补偿操作
+            // explicit compensating action
             let _ = gateway.refund(from, amount).await;
             Err(TransferError::Gateway(e))
         }
@@ -499,7 +499,7 @@ async fn transfer_funds(
 ### 3. Class Inheritance -> Trait + Composition
 
 ```php
-// PHP: 类继承——重用行为
+// PHP: class inheritance — reuse behavior
 abstract class Mailer
 {
     abstract protected function transport(): Transport;
@@ -512,7 +512,7 @@ abstract class Mailer
 
     protected function log(Message $message): void
     {
-        // 记录发送日志
+        // log the send
     }
 }
 
@@ -526,7 +526,7 @@ class SmtpMailer extends Mailer
 ```
 
 ```rust
-// Rust: trait 定义行为，组合替代继承
+// Rust: trait defines behavior, composition replaces inheritance
 #[async_trait]
 trait Transport: Send + Sync {
     async fn send(&self, message: &Message) -> Result<(), TransportError>;
@@ -561,7 +561,7 @@ impl Mailer for SmtpMailer {
 ### 4. Composer Autoload -> Module System
 
 ```php
-// PHP: PSR-4 autoload —— 文件名映射到类名
+// PHP: PSR-4 autoload — filename maps to class name
 // src/Services/Payment/Gateway.php
 namespace App\Services\Payment;
 
@@ -573,13 +573,13 @@ class Gateway implements GatewayInterface
     public function charge(Transaction $txn): void { ... }
 }
 
-// 调用
+// usage
 use App\Services\Payment\Gateway;
 $gw = new Gateway();
 ```
 
 ```rust
-// Rust: 显式模块树 —— 模块在文件中声明
+// Rust: explicit module tree — modules declared in files
 // src/services/payment.rs
 pub mod gateway;
 
@@ -593,7 +593,7 @@ impl GatewayInterface for Gateway {
     fn charge(&self, txn: &Transaction) -> Result<(), GatewayError> { ... }
 }
 
-// 调用 —— 路径对应模块层次结构
+// usage — path mirrors module hierarchy
 use crate::services::payment::gateway::Gateway;
 let gw = Gateway::new(config);
 ```
@@ -601,7 +601,7 @@ let gw = Gateway::new(config);
 ### 5. Middleware / Request Pipeline
 
 ```php
-// Laravel: 中间件管道
+// Laravel: middleware pipeline
 class Authenticate
 {
     public function handle(Request $request, Closure $next): Response
@@ -626,13 +626,13 @@ async fn authenticate(
     mut request: Request,
     next: Next,
 ) -> Result<Response, StatusCode> {
-    // 从 header 或 session 提取用户信息
+    // extract user info from header or session
     let user = extract_user(&request).ok_or(StatusCode::UNAUTHORIZED)?;
     request.extensions_mut().insert(user);
     Ok(next.run(request).await)
 }
 
-// 注册中间件
+// register middleware
 let app = Router::new()
     .route("/dashboard", get(dashboard))
     .layer(middleware::from_fn(authenticate));
@@ -641,14 +641,14 @@ let app = Router::new()
 ### 6. Dynamic Method Call -> Enum Dispatch
 
 ```php
-// PHP: 动态方法调用——运行时决定
+// PHP: dynamic method call — decided at runtime
 class NotificationService
 {
     public function notify(string $channel, string $message): void
     {
         $method = 'sendVia' . ucfirst($channel);
         if (method_exists($this, $method)) {
-            $this->$method($message); // 运行时分派
+            $this->$method($message); // runtime dispatch
         }
     }
 
@@ -659,7 +659,7 @@ class NotificationService
 ```
 
 ```rust
-// Rust: enum + trait 实现——编译期安全的分派
+// Rust: enum + trait — compile-time safe dispatch
 enum Channel {
     Email,
     Sms,
@@ -674,7 +674,7 @@ struct NotificationService {
 
 impl NotificationService {
     async fn notify(&self, channel: Channel, message: &str) -> Result<(), NotifyError> {
-        match channel {  // 穷举匹配，编译器保证所有分支已处理
+        match channel {  // exhaustive match, compiler guarantees all arms covered
             Channel::Email => self.email.send(message).await?,
             Channel::Sms => self.sms.send(message).await?,
             Channel::Push => self.push.send(message).await?,
@@ -736,7 +736,7 @@ location /api/ {
 ### PHP Extension via C-ABI (for Library Migration)
 
 ```rust
-// Rust 侧: cdylib 导出
+// Rust side: cdylib export
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
@@ -746,7 +746,7 @@ pub extern "C" fn rustium_validate_email(ptr: *const c_char) -> i32 {
         Ok(s) => s,
         Err(_) => return 0,
     };
-    // 使用邮箱验证逻辑
+    // use email validation logic
     if email.contains('@') && email.len() <= 254 {
         1
     } else {
@@ -756,7 +756,7 @@ pub extern "C" fn rustium_validate_email(ptr: *const c_char) -> i32 {
 ```
 
 ```php
-// PHP 侧: FFI 调用
+// PHP side: FFI call
 $ffi = FFI::cdef(
     "int rustium_validate_email(const char* email);",
     "lib/librustium.so"
@@ -781,17 +781,17 @@ $valid = $ffi->rustium_validate_email("test@example.com");
 ### Mistake 1: Porting Arrays as `serde_json::Value` Universally
 
 ```rust
-// 错误：把 PHP 数组习惯直接翻译为动态 JSON 类型
+// WRONG: translating PHP array habits directly to dynamic JSON types
 use serde_json::Value;
 fn get_user(id: i64) -> Value {
-    json!({         // 编译期无类型检查
+    json!({         // no compile-time type checking
         "id": 1,
         "name": "Alice",
         "roles": ["admin"]
     })
 }
 
-// 正确：定义具体类型
+// CORRECT: define concrete types
 #[derive(Serialize)]
 struct User {
     id: i64,
@@ -799,7 +799,7 @@ struct User {
     roles: Vec<String>,
 }
 fn get_user(id: i64) -> Result<User, Error> {
-    // 编译期保证所有字段类型正确
+    // compiler guarantees all field types are correct
     Ok(User { id: 1, name: "Alice".into(), roles: vec!["admin".into()] })
 }
 ```
@@ -807,26 +807,26 @@ fn get_user(id: i64) -> Result<User, Error> {
 ### Mistake 2: Copying PHP's Defensive Null Checks
 
 ```php
-// PHP: 习惯到处检查 null/empty
+// PHP: habit of checking null/empty everywhere
 $name = $user['name'] ?? 'Unknown';
 $email = isset($user['email']) ? $user['email'] : '';
 $avatar = $user['profile']['avatar'] ?? null;
 ```
 
 ```rust
-// Rust: Option 类型在类型层面处理缺失
+// Rust: Option type handles absence at the type level
 struct User {
-    name: String,                  // 保证非空
-    email: Option<String>,         // 类型系统表明可空
+    name: String,                  // guaranteed non-null
+    email: Option<String>,         // type system indicates nullable
     profile: Option<Profile>,
 }
 
 struct Profile {
-    avatar: Option<String>,        // 可能没有头像
+    avatar: Option<String>,        // may not have an avatar
 }
 
-// 不需要 ?? 操作符；使用模式匹配或组合器
-let display_name = user.name;  // 总是有效
+// no ?? operator needed; use pattern matching or combinators
+let display_name = user.name;  // always valid
 let email = user.email.unwrap_or_default();
 let avatar = user.profile
     .as_ref()
@@ -837,7 +837,7 @@ let avatar = user.profile
 ### Mistake 3: Runtime Flexibility Over Type Safety
 
 ```rust
-// 错误：PHP 开发者用 trait 对象模拟动态分发，丢失类型信息
+// WRONG: PHP devs emulate dynamic dispatch with trait objects, losing type info
 fn process_payment(method: Box<dyn Any>) -> Result<(), String> {
     if let Some(stripe) = method.downcast_ref::<StripePayment>() {
         stripe.charge();
@@ -847,7 +847,7 @@ fn process_payment(method: Box<dyn Any>) -> Result<(), String> {
     Ok(())
 }
 
-// 正确：使用 enum + trait，编译期穷举
+// CORRECT: use enum + trait, compile-time exhaustive
 enum PaymentMethod {
     Stripe(StripePayment),
     Paypal(PaypalPayment),
@@ -861,7 +861,7 @@ impl PaymentMethod {
             PaymentMethod::Paypal(p) => p.charge(amount).await,
             PaymentMethod::BankTransfer(b) => b.charge(amount).await,
         }
-        // 添加新支付方式时编译器会报错此处漏分支
+        // adding a new payment method triggers compiler error for missing arm
     }
 }
 ```
@@ -869,37 +869,37 @@ impl PaymentMethod {
 ### Mistake 4: Expecting Function-Level Scope Cleanup
 
 ```php
-// PHP: 函数结束时自动清理（引用计数归零）
+// PHP: automatic cleanup at function end (refcount reaches zero)
 function process(): void {
     $file = fopen('/tmp/data.csv', 'r');
-    // ... 使用文件 ...
-    // 函数结束时 $file 自动关闭（或 GC 回收）
+    // ... use file ...
+    // file auto-closes at function end (or GC collects)
 }
 ```
 
 ```rust
-// Rust: 作用域退出时 Drop，不是函数退出时
+// Rust: Drop at scope exit, not at function exit
 fn process() -> Result<(), Error> {
     {
         let file = File::open("/tmp/data.csv")?;
-        // ... 使用 file ...
-    } // file 在此 Drop，不是在函数末尾
+        // ... use file ...
+    } // file dropped here, not at function end
 
-    // file 已经关闭，这里可以安全打开同一个文件
+    // file is already closed, safe to open the same file again
     let file2 = File::open("/tmp/data.csv")?;
     Ok(())
-} // 不是 PHP 风格的"函数结束时清理"而是"作用域结束时清理"
+} // scope-exit cleanup, not PHP-style "cleanup at function end"
 ```
 
 ### Mistake 5: Over-Using `unwrap()` / `expect()`
 
 ```rust
-// 错误：PHP 开发者用 unwrap() 替代 PHP 的隐式 null 忽略
-let user = db.get_user(id).unwrap();             // 可能 panic
-let email = user.email.unwrap();                 // 可能 panic
-let name = config.get("app.name").unwrap();      // 可能 panic
+// WRONG: PHP devs using unwrap() as PHP's implicit null ignoring
+let user = db.get_user(id).unwrap();             // may panic
+let email = user.email.unwrap();                 // may panic
+let name = config.get("app.name").unwrap();      // may panic
 
-// 正确：传播错误或提供合理的默认值/错误处理
+// CORRECT: propagate errors or provide reasonable defaults/error handling
 let user = db.get_user(id)
     .map_err(|e| AppError::NotFound { id, source: e })?;
 
@@ -926,4 +926,6 @@ let name = config.get("app.name")
 - **java-to-rust**: Class-to-trait mapping; shared enterprise patterns with Laravel/Symfony migration
 - **go-to-rust**: Async runtime patterns; PHP Fiber/Goroutine parallelism concepts
 - **nodejs-to-rust**: Web framework migration; shared NPM/Composer-to-Cargo dependency mapping
+- **python-to-rust**: Dynamic-to-static typing patterns; shared Django→Axum migration strategies
+- **ruby-to-rust**: Dynamic language patterns; shared Rails/Laravel framework migration, Bundler/Composer to Cargo
 - **c-to-rust**: PHP extension (C-ABI) interop if migrating via extension approach

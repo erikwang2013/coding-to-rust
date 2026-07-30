@@ -168,8 +168,8 @@ use tokio::time::{timeout, Duration};
 
 let result = timeout(Duration::from_secs(5), async {
     let (user, orders) = tokio::join!(
-        fetch_user(id),   // 并发执行
-        fetch_orders(id), // 并发执行
+        fetch_user(id),   // concurrent execution
+        fetch_orders(id), // concurrent execution
     );
     format_summary(&user?, &orders?)
 }).await
@@ -196,7 +196,7 @@ let result = timeout(Duration::from_secs(5), async {
 // Java 21+: virtual threads -- blocking code auto-yields platform threads
 try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
     executor.submit(() -> {
-        var data = blockingApiCall(); // JVM 在阻塞时让出平台线程
+        var data = blockingApiCall(); // JVM yields platform thread on block
         process(data);
     });
 }
@@ -206,13 +206,13 @@ try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
 // Rust: explicit async/await -- never blocks OS threads
 tokio::spawn(async move {
     let data = reqwest::get(url).await?.json().await?;
-    // .await 点自动让出运行时线程
+    // .await point auto-yields runtime thread
     process(data);
 });
 
-// 对不可避免的阻塞调用，使用 spawn_blocking
+// for unavoidable blocking calls, use spawn_blocking
 let data = tokio::task::spawn_blocking(|| {
-    blocking_api_call() // 在专用阻塞线程池中运行
+    blocking_api_call() // runs in dedicated blocking thread pool
 }).await?;
 ```
 
@@ -340,7 +340,7 @@ public interface PaymentProcessor {
 public class StripeProcessor implements PaymentProcessor {
     @Override
     public PaymentResult process(PaymentRequest request) {
-        // Stripe 实现
+        // Stripe implementation
     }
 
     @Override
@@ -364,7 +364,7 @@ pub struct StripeProcessor {
 
 impl PaymentProcessor for StripeProcessor {
     fn process(&self, request: &PaymentRequest) -> Result<PaymentResult, PaymentError> {
-        // Stripe 实现——self 方法自动借用
+        // Stripe implementation — self auto-borrowed in methods
     }
 
     fn supports(&self, method: PaymentMethod) -> bool {
@@ -372,12 +372,12 @@ impl PaymentProcessor for StripeProcessor {
     }
 }
 
-// 静态分发：编译期单态化，零运行时开销
+// static dispatch: compile-time monomorphization, zero runtime cost
 fn process_payment(processor: &impl PaymentProcessor, req: &PaymentRequest) {
     processor.process(req);
 }
 
-// 动态分发：需要异构集合
+// dynamic dispatch: when heterogeneous collections are needed
 fn process_batch(processors: &[&dyn PaymentProcessor], req: &PaymentRequest) {
     for p in processors {
         p.process(req);
@@ -457,10 +457,10 @@ List<Invoice> overdueInvoices = invoices.stream()
 use itertools::Itertools;
 
 let overdue_invoices: Vec<&Invoice> = invoices
-    .iter()                                    // 借用迭代
+    .iter()                                    // borrow iteration
     .filter(|inv| inv.due_date < today)
     .filter(|inv| inv.status == Status::Sent)
-    .sorted_by_key(|inv| inv.due_date)         // itertools 提供
+    .sorted_by_key(|inv| inv.due_date)         // provided by itertools
     .take(50)
     .collect();
 ```
@@ -482,7 +482,7 @@ public class OrderService {
     private NotificationService notificationService;
 
     public OrderDTO createOrder(CreateOrderRequest req) {
-        // 业务逻辑
+        // business logic
     }
 }
 ```
@@ -504,7 +504,7 @@ impl<P: PaymentProcessor, N: Notifier> OrderService<P, N> {
         &self,
         req: CreateOrderRequest,
     ) -> Result<OrderDto, OrderError> {
-        // 显式事务管理
+        // explicit transaction management
         let mut tx = self.order_repo.begin().await?;
         let order = tx.insert_order(&req).await?;
         self.payment_gateway.charge(&req.payment).await?;
@@ -529,7 +529,7 @@ public class QueryRequest {
     private List<String> filters;
 }
 
-// 使用
+// usage
 QueryRequest req = QueryRequest.builder()
     .index("products")
     .query("laptop")
@@ -554,12 +554,12 @@ pub struct QueryRequest {
     filters: Vec<String>,
 }
 
-// 使用——编译期保证所有必填字段已设置
+// usage — compiler guarantees all required fields are set
 let req = QueryRequest::builder()
     .index("products".into())
     .query("laptop".into())
     .page(1)
-    .build(); // 忘记 .index() 会导致编译错误
+    .build(); // forgetting .index() causes compile error
 ```
 
 ## FFI & Incremental Migration
@@ -597,7 +597,7 @@ pub extern "system" fn Java_com_example_RustBridge_compute(
 ```
 
 ```java
-// Java 侧：加载 native library
+// Java side: load native library
 public class RustBridge {
     static { System.loadLibrary("rust_core"); }
 
@@ -618,14 +618,14 @@ public class RustBridge {
 ### Mistake 1: Over-Engineering the DI Container
 
 ```rust
-// 错误：Java 开发者手动实现 DI 容器
+// WRONG: Java devs implementing DI container manually
 struct Container {
     user_service: Arc<UserService>,
     order_service: Arc<OrderService>,
     // ... 50 more fields
 }
 
-// 正确：简单的构造函数注入或启动时组装
+// CORRECT: simple constructor injection or startup wiring
 fn main() {
     let db_pool = PgPoolOptions::new().connect(&db_url).await.unwrap();
     let payment = StripeGateway::new(&config);
@@ -641,14 +641,14 @@ fn main() {
         order_service: Arc::new(order_service),
         db: db_pool,
     };
-    // 传给 axum Router
+    // pass to axum Router
 }
 ```
 
 ### Mistake 2: Catch-All Error Handling
 
 ```rust
-// 错误：捕获所有错误为字符串（类似 catch(Exception e)）
+// WRONG: catching all errors as strings (like catch(Exception e))
 fn process() -> Result<(), String> {
     let data = read_file().map_err(|e| e.to_string())?;
     let parsed = parse(&data).map_err(|e| e.to_string())?;
@@ -656,7 +656,7 @@ fn process() -> Result<(), String> {
     Ok(())
 }
 
-// 正确：定义有意义的错误类型
+// CORRECT: define meaningful error types
 #[derive(Error, Debug)]
 enum ProcessError {
     #[error("file read failed: {0}")]
@@ -668,9 +668,9 @@ enum ProcessError {
 }
 
 fn process() -> Result<(), ProcessError> {
-    let data = read_file()?;    // Io 错误自动转换
-    let parsed = parse(&data)?; // Parse 错误手动映射
-    save(parsed)?;              // DB 错误自动转换
+    let data = read_file()?;    // Io error auto-converted
+    let parsed = parse(&data)?; // Parse error manually mapped
+    save(parsed)?;              // DB error auto-converted
     Ok(())
 }
 ```
@@ -678,30 +678,30 @@ fn process() -> Result<(), ProcessError> {
 ### Mistake 3: Forgetting Rust's Move Semantics
 
 ```rust
-// 错误：Java 开发者在循环中无意移动所有权
+// WRONG: Java devs accidentally moving ownership in loops
 let users: Vec<User> = load_users();
 for user in users {
-    process(user);       // user 被移动到 process()
+    process(user);       // user is moved into process()
 }
-// process_again(&users); // 编译错误：users 已经被消耗
+// process_again(&users); // compile error: users was already consumed
 
-// 正确：明确你要借用还是消耗
+// CORRECT: be explicit about borrow vs consume
 let users: Vec<User> = load_users();
-for user in &users {    // 借用迭代
-    process_ref(user);   // 传递引用
+for user in &users {    // borrow iteration
+    process_ref(user);   // pass reference
 }
-// users 仍然可用
+// users is still usable
 ```
 
 ### Mistake 4: Over-Using Box<dyn Error>
 
 ```rust
-// 错误：类似 Java 的 throws Exception，丢失类型信息
+// WRONG: like Java throws Exception, loses type information
 fn handle_request(req: Request) -> Result<Response, Box<dyn std::error::Error>> {
     // ...
 }
 
-// 正确：使用 thiserror 定义具体错误类型，保留类型信息
+// CORRECT: use thiserror for concrete error types, preserves type info
 #[derive(Error, Debug)]
 enum ApiError {
     #[error("validation failed: {0}")]

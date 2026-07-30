@@ -1,0 +1,12 @@
+/.idea/
+/.vscode/
+.phpunit.result.cache
+.DS_Store
+Thumbs.db
+.phpunit.cache
+.claude
+.swarm
+.mcp.json
+ruvector.db
+.superpowers/state/target
+target

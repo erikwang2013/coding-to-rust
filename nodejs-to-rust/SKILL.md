@@ -293,7 +293,7 @@ Node.js's single-threaded event loop means that module-level variables, closures
 
 **Node.js (Express):**
 ```typescript
-// Express 路由: 中间件链 + 请求处理
+// Express route: middleware chain + request handler
 import express from 'express';
 
 const app = express();
@@ -313,7 +313,7 @@ app.listen(3000);
 
 **Rust (Axum):**
 ```rust
-// Axum 路由: 类型安全的提取器 + 异步处理器
+// Axum route: type-safe extractors + async handler
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -328,8 +328,8 @@ struct UserResponse {
 }
 
 async fn get_user(
-    Path(id): Path<u32>,                    // 类型安全的路径参数提取
-    State(db): State<Arc<DbPool>>,          // 共享状态提取
+    Path(id): Path<u32>,                    // type-safe path parameter extraction
+    State(db): State<Arc<DbPool>>,          // shared state extraction
 ) -> Result<Json<UserResponse>, StatusCode> {
     let user = db.find_user(id).await.ok_or(StatusCode::NOT_FOUND)?;
     Ok(Json(UserResponse { data: user.into() }))
@@ -352,7 +352,7 @@ async fn main() {
 
 **Node.js:**
 ```typescript
-// Promise.all: 并发等待多个异步操作
+// Promise.all: concurrently await multiple async operations
 const [user, posts, settings] = await Promise.all([
     db.findUser(id),
     db.findPosts(id),
@@ -362,7 +362,7 @@ const [user, posts, settings] = await Promise.all([
 
 **Rust:**
 ```rust
-// tokio::join!: 并发执行多个 Future
+// tokio::join!: execute multiple futures concurrently
 let user_fut = db.find_user(id);
 let posts_fut = db.find_posts(id);
 let settings_fut = db.get_settings(id);
@@ -372,7 +372,7 @@ let user = user?;
 let posts = posts?;
 let settings = settings?;
 
-// 动态数量的并发(类似 Promise.all 处理数组):
+// dynamic number of concurrent futures (like Promise.all with arrays):
 let futures: Vec<_> = ids.iter()
     .map(|id| db.find_user(*id))
     .collect();
@@ -383,12 +383,12 @@ let results: Vec<Result<User, _>> = futures::future::join_all(futures).await;
 
 **Node.js:**
 ```typescript
-// EventEmitter: 一对多事件通知
+// EventEmitter: one-to-many event notification
 import { EventEmitter } from 'events';
 
 const bus = new EventEmitter();
 
-// 订阅
+// subscribe
 bus.on('order:created', (order) => {
   sendEmail(order);
 });
@@ -396,18 +396,18 @@ bus.on('order:created', (order) => {
   updateInventory(order);
 });
 
-// 发布
+// publish
 bus.emit('order:created', { id: 42, total: 99.99 });
 ```
 
 **Rust:**
 ```rust
-// tokio::sync::broadcast (一对多,等价于 EventEmitter)
+// tokio::sync::broadcast (one-to-many, equivalent to EventEmitter)
 use tokio::sync::broadcast;
 
 let (tx, _) = broadcast::channel::<Order>(32);
 
-// 订阅者 1
+// subscriber 1
 let mut rx1 = tx.subscribe();
 tokio::spawn(async move {
     while let Ok(order) = rx1.recv().await {
@@ -415,7 +415,7 @@ tokio::spawn(async move {
     }
 });
 
-// 订阅者 2
+// subscriber 2
 let mut rx2 = tx.subscribe();
 tokio::spawn(async move {
     while let Ok(order) = rx2.recv().await {
@@ -423,7 +423,7 @@ tokio::spawn(async move {
     }
 });
 
-// 发布
+// publish
 tx.send(Order { id: 42, total: 99.99 }).unwrap();
 ```
 
@@ -431,7 +431,7 @@ tx.send(Order { id: 42, total: 99.99 }).unwrap();
 
 **Node.js (Express middleware):**
 ```typescript
-// Express 中间件: 认证 + 日志
+// Express middleware: auth + logging
 function authMiddleware(req, res, next) {
   const token = req.headers.authorization;
   if (!token) return res.status(401).json({ error: 'unauthorized' });
@@ -445,14 +445,14 @@ app.use(logger);
 
 **Rust (Axum / Tower):**
 ```rust
-// Tower 中间件: 基于 Service trait 的层叠组合
+// Tower middleware: layered composition via Service trait
 use axum::{
     middleware,
     http::{Request, StatusCode},
     response::Response,
 };
 
-// 认证中间件
+// auth middleware
 async fn auth_middleware<B>(
     mut req: Request<B>,
     next: middleware::Next<B>,
@@ -461,14 +461,14 @@ async fn auth_middleware<B>(
         .get("authorization")
         .ok_or(StatusCode::UNAUTHORIZED)?;
     let user = verify_token(token).map_err(|_| StatusCode::UNAUTHORIZED)?;
-    req.extensions_mut().insert(user);  // 注入用户信息到请求扩展
+    req.extensions_mut().insert(user);  // inject user info into request extensions
     Ok(next.run(req).await)
 }
 
 let app = Router::new()
     .route("/api/*", get(handler))
     .layer(middleware::from_fn(auth_middleware))
-    // Tower Trace 层记录请求/响应:
+    // Tower Trace layer for request/response logging:
     .layer(tower_http::trace::TraceLayer::new_for_http());
 ```
 
@@ -489,7 +489,7 @@ class UserService {
 
 **Rust:**
 ```rust
-// trait 定义依赖接口(struct 持有具体实现或 Arc<dyn Trait>)
+// trait defines dependency interface (struct holds concrete impl or Arc<dyn Trait>)
 #[async_trait]
 pub trait EmailService: Send + Sync {
     async fn send_welcome(&self, email: &str) -> Result<(), EmailError>;
@@ -497,7 +497,7 @@ pub trait EmailService: Send + Sync {
 
 pub struct UserService {
     db: Arc<DbPool>,
-    email: Arc<dyn EmailService>,  // 依赖注入
+    email: Arc<dyn EmailService>,  // dependency injection
 }
 
 impl UserService {
@@ -513,7 +513,7 @@ impl UserService {
 
 **Node.js:**
 ```typescript
-// 动态 JSON + 手动类型守卫
+// dynamic JSON + manual type guard
 const data = JSON.parse(rawString);
 if (typeof data.name === 'string' && typeof data.age === 'number') {
   const user: User = data as User;
@@ -524,7 +524,7 @@ if (typeof data.name === 'string' && typeof data.age === 'number') {
 ```rust
 use serde::{Deserialize, Serialize};
 
-// 方案 A: 编译期类型安全的反序列化(推荐)
+// Option A: compile-time type-safe deserialization (recommended)
 #[derive(Deserialize, Serialize)]
 struct User {
     name: String,
@@ -534,9 +534,9 @@ struct User {
 }
 
 let user: User = serde_json::from_str(&raw_string)?;
-// 类型在编译期验证,无需运行时守卫
+// types verified at compile time, no runtime guards needed
 
-// 方案 B: 动态 JSON(类似 JS 的任意对象访问)
+// Option B: dynamic JSON (like JS arbitrary object access)
 let value: serde_json::Value = serde_json::from_str(&raw_string)?;
 if let (Some(name), Some(age)) = (
     value["name"].as_str(),
@@ -550,7 +550,7 @@ if let (Some(name), Some(age)) = (
 
 **Node.js:**
 ```typescript
-// Transform stream: 行转换为大写
+// Transform stream: convert lines to uppercase
 import { createReadStream, createWriteStream } from 'fs';
 import { Transform } from 'stream';
 
@@ -605,7 +605,7 @@ For a running Node.js service, the most practical approach is the **strangler fi
 ### Calling Rust from Node.js (via NAPI-RS)
 
 ```rust
-// 使用 napi-rs 创建 Node.js 原生插件
+// use napi-rs to create Node.js native addon
 use napi_derive::napi;
 use napi::bindgen_prelude::*;
 
@@ -624,7 +624,7 @@ pub fn parse_markdown(input: String) -> Result<ParseResult> {
 ```
 
 ```typescript
-// Node.js 侧调用 Rust 原生插件
+// Node.js side calling Rust native addon
 import { parseMarkdown } from 'my-rust-parser';
 const result = parseMarkdown('# Hello\nWorld');
 console.log(result.tokens);  // ["#", " ", "Hello", "\n", "World"]
@@ -633,7 +633,7 @@ console.log(result.tokens);  // ["#", " ", "Hello", "\n", "World"]
 ### Sidecar Pattern (JSON-over-stdin/stdout)
 
 ```rust
-// Rust 侧: 从 stdin 读取 JSON,处理后写入 stdout
+// Rust side: read JSON from stdin, process, write to stdout
 use std::io::{self, BufRead, Write};
 
 fn main() -> io::Result<()> {
@@ -649,7 +649,7 @@ fn main() -> io::Result<()> {
 ```
 
 ```typescript
-// Node.js 侧: spawn Rust binary,通过 JSON 行通信
+// Node.js side: spawn Rust binary, communicate via JSON lines
 const { spawn } = require('child_process');
 const child = spawn('./rust-processor');
 
@@ -666,26 +666,26 @@ child.stdout.on('data', (data) => {
 
 **Wrong:**
 ```rust
-// 不要: 持锁跨越 .await -- std Mutex 会死锁,tokio Mutex 会 panic
+// WRONG: holding a lock across .await -- std Mutex deadlocks, tokio Mutex panics
 async fn checkout(pool: &PgPool, cart_id: i32) -> Result<Order, Error> {
     let mut cart = CART_CACHE.lock().unwrap();
     let items = cart.remove(&cart_id);
 
-    let order = create_order(pool, items).await?;  // .await 时持有锁!
+    let order = create_order(pool, items).await?;  // holding lock during .await!
     Ok(order)
 }
 ```
 
 **Right:**
 ```rust
-// 正确: 将锁范围限制在同步代码块内,不跨越 .await
+// CORRECT: scope the lock to sync code only, no .await across it
 async fn checkout(pool: &PgPool, cart_id: i32) -> Result<Order, Error> {
     let items = {
         let mut cart = CART_CACHE.lock().unwrap();
         cart.remove(&cart_id)
-    };  // 锁在此处释放
+    };  // lock released here
 
-    let order = create_order(pool, items).await?;  // 无锁的 .await
+    let order = create_order(pool, items).await?;  // no lock during .await
     Ok(order)
 }
 ```
@@ -694,18 +694,18 @@ async fn checkout(pool: &PgPool, cart_id: i32) -> Result<Order, Error> {
 
 **Wrong:**
 ```rust
-// 不要: 库代码中使用类型擦除的错误
+// WRONG: type-erased errors in library code
 pub fn parse_config(path: &str) -> anyhow::Result<Config> {
     let content = std::fs::read_to_string(path)?;
     let config: Config = serde_json::from_str(&content)?;
     Ok(config)
 }
-// 调用方无法区分文件错误和解析错误
+// caller cannot distinguish file error from parse error
 ```
 
 **Right:**
 ```rust
-// 正确: 库代码使用结构化错误枚举(thiserror)
+// CORRECT: structured error enum for library code (thiserror)
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -729,10 +729,10 @@ pub fn parse_config(path: &str) -> Result<Config, ConfigError> {
 
 **Wrong:**
 ```rust
-// 不要: 对业务错误使用 panic(JS 中没有等价概念)
+// WRONG: using panic for business errors (no equivalent in JS)
 fn divide(a: i32, b: i32) -> i32 {
     if b == 0 {
-        panic!("division by zero");  // Node.js 返回 Infinity;panic 无法恢复
+        panic!("division by zero");  // Node.js returns Infinity; panic is unrecoverable
     }
     a / b
 }
@@ -740,12 +740,12 @@ fn divide(a: i32, b: i32) -> i32 {
 
 **Right:**
 ```rust
-// 正确: 返回 Result,让调用方决定如何处理错误
+// CORRECT: return Result, let caller decide how to handle the error
 fn divide(a: i32, b: i32) -> Result<i32, &'static str> {
     if b == 0 { Err("division by zero") } else { Ok(a / b) }
 }
 
-// 调用端可选择处理方式:
+// caller can choose how to handle:
 match divide(10, 0) {
     Ok(result) => println!("{result}"),
     Err(e) => eprintln!("error: {e}"),
@@ -756,37 +756,37 @@ match divide(10, 0) {
 
 **Wrong:**
 ```rust
-// 不要: 假设 .len() 返回字符数(JS 习惯)
+// WRONG: assuming .len() returns character count (JS habit)
 let s = "你好";
-assert_eq!(s.len(), 2);  // 实际是 6(UTF-8 中每个中文字符占 3 字节)
+assert_eq!(s.len(), 2);  // actually 6 (each CJK char is 3 bytes in UTF-8)
 ```
 
 **Right:**
 ```rust
-// 正确: 区分字节数和字符数
+// CORRECT: distinguish byte count from char count
 let s = "你好";
-assert_eq!(s.len(), 6);           // 字节数
-assert_eq!(s.chars().count(), 2); // 字符数
+assert_eq!(s.len(), 6);           // byte count
+assert_eq!(s.chars().count(), 2); // char count
 
-// 切片时注意 UTF-8 边界:
-let slice = &s[..3];  // 截取前 3 个字节 → 完整截取第一个字符"你"
-// &s[..2] 会 panic,因为截断了多字节字符
+// beware UTF-8 boundaries when slicing:
+let slice = &s[..3];  // take first 3 bytes -> captures first char completely
+// &s[..2] would panic, cutting into a multi-byte char
 ```
 
 ### Mistake 5: Using `serde_json::Value` as a Universal Type
 
 **Wrong:**
 ```rust
-// 不要: 所有地方都用 Value,失去编译期类型检查
+// WRONG: using Value everywhere loses compile-time type checking
 fn process(data: serde_json::Value) -> serde_json::Value {
     json!({ "result": data["name"].as_str().unwrap_or("") })
 }
-// 运行时字段名拼写错误无法被编译器发现
+// runtime field name typos cannot be caught by the compiler
 ```
 
 **Right:**
 ```rust
-// 正确: 定义结构化类型,在边界处进行序列化/反序列化
+// CORRECT: define structured types, serialize/deserialize at boundaries
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
@@ -798,39 +798,40 @@ struct Output { greeting: String }
 fn process(input: Input) -> Output {
     Output { greeting: format!("Hello, {}!", input.name) }
 }
-// 编译器验证所有字段访问;拼写错误在编译期捕获
+// compiler verifies all field access; typos caught at compile time
 ```
 
 ### Mistake 6: Cloning Everything for "Safety" (Node.js GC Mindset)
 
 **Wrong:**
 ```rust
-// 不要: 到处 clone(),仿佛需要保护数据不被 GC 或异步回调修改
+// WRONG: cloning everywhere as if protecting data from GC or async callbacks
 fn handle(data: Data) {
-    let data2 = data.clone();  // 不必要的克隆
+    let data2 = data.clone();  // unnecessary clone
     tokio::spawn(async move {
         process(data2).await;
+
     });
-    let data3 = data.clone();  // 又克隆了一次
+    let data3 = data.clone();  // cloned again
     save(data3).await;
 }
 ```
 
 **Right:**
 ```rust
-// 正确: 使用 Arc 共享不可变数据;或转移所有权而非拷贝
+// CORRECT: share immutable data via Arc; or transfer ownership instead of copying
 fn handle(data: Arc<Data>) {
-    let data_clone = data.clone();  // Arc::clone 只增加引用计数
+    let data_clone = data.clone();  // Arc::clone only increments ref count
     tokio::spawn(async move {
         process(&data_clone).await;
     });
-    save(&data).await;  // 借用即可,无需克隆
+    save(&data).await;  // borrow, no clone needed
 }
 
-// 如果 data 不需要共享:直接转移所有权
+// if data doesn't need sharing: transfer ownership directly
 fn handle(data: Data) {
     tokio::spawn(async move { process(data).await });
-    // data 的所有权已移入 spawned task
+    // data ownership moved into spawned task
 }
 ```
 

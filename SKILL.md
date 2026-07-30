@@ -35,7 +35,7 @@ This is the entry point for migrating code from any source language to Rust. It 
 | **Kotlin** | [kotlin-to-rust](#kotlin-to-rust) | Coroutines to tokio, data class to struct, sealed class to enum, Gradle to Cargo |
 | **Swift** | [swift-to-rust](#swift-to-rust) | ARC to ownership, actor to Mutex, protocol to trait, SwiftUI to Leptos |
 | **Ruby** | [ruby-to-rust](#ruby-to-rust) | GC to ownership, blocks to closures, Rails to Axum, Bundler to Cargo |
-| **Vue** | [vue-to-rust](#vue-to-rust-wasm) | **(Frontend/WASM)** SFC to component functions, ref() to RwSignal, Vite to Trunk |
+| **Vue** | [vue-to-rust](#vue-to-rust-wasm) | :warning: **(Frontend / WebAssembly — NOT backend)** SFC to component functions, ref() to RwSignal, Vite to Trunk |
 
 ## Universal Migration Concepts
 
@@ -359,6 +359,51 @@ Most source languages index strings by character. Rust strings are UTF-8 bytes. 
 
 ### 7. Expecting Runtime Reflection
 Rust has no `typeof`, `instanceof`, `getattr`, or `method_exists` for production logic. Use traits, enums, and generics instead.
+### 8. Macro Systems vs. Metaprogramming
+Source languages offer metaprogramming through various mechanisms: C preprocessor macros, Lisp-style macros (Julia, Lua), runtime reflection (Java, C#, PHP), decorators (Python), or compiler plugins (Kotlin, Swift). Rust provides two macro systems:
+
+| Source Metaprogramming | Rust | When to Use |
+|------------------------|------|-------------|
+| C `#define` / preprocessor | `macro_rules!` (declarative) | Simple code generation, DSLs |
+| Template metaprogramming (C++, Zig `comptime`) | `proc_macro` (procedural) | Complex codegen, derive macros |
+| Runtime reflection / `@annotations` | `#[derive(Trait)]` | Compile-time trait derivation |
+| `eval()` / `method_missing` | Not available — use traits/enums | Design around static dispatch |
+
+**Rule of thumb**: Prefer generics and traits first. Use `macro_rules!` for repetitive boilerplate. Reach for proc macros only when compile-time code generation is truly needed.
+
+### 9. Testing During Migration
+Testing strategy changes significantly when migrating to Rust:
+
+| Concern | Strategy |
+|---------|----------|
+| **Parity testing** | Run both old and new implementations against the same inputs, diff outputs |
+| **Property-based testing** | Use `proptest` crate — define invariants, test against random inputs |
+| **Snapshot testing** | Use `insta` crate — serialize outputs and diff against stored snapshots |
+| **Fuzz testing** | `cargo-fuzz` / `libfuzzer` — especially important for parsers and protocol handlers |
+| **Benchmarking** | `criterion` / `divan` — compare performance before/after migration |
+| **CI integration** | `cargo test`, `cargo clippy`, `cargo fmt --check` in CI pipeline |
+
+### 10. Compilation Time Tradeoffs
+Rust's compilation is slower than most source languages. Mitigation strategies:
+
+| Strategy | Effect |
+|----------|--------|
+| Use `cargo check` during development (skip codegen, ~2-3x faster than `cargo build`) | Fast feedback on type errors |
+| Split into workspace crates | Parallel compilation, incremental rebuilds |
+| Use `sccache` or `mold` linker | Faster linking, cached compilation |
+| Avoid `#[inline]` overuse and large generic functions | Smaller codegen units |
+| `debug = 0` in dev profile | Faster dev builds (trade: worse backtraces) |
+
+### 11. Observability & Logging
+Most source languages use printf-debugging or log-level frameworks. Rust's `tracing` crate provides structured, span-based observability:
+
+| Source | Rust (`tracing`) |
+|--------|-------------------|
+| `console.log` / `print()` / `echo` | `tracing::info!` / `tracing::debug!` |
+| `try/catch` + log | `tracing::error!` + `?` propagation |
+| Request ID / correlation ID | `tracing::Span` with `#[tracing::instrument]` |
+| Metrics / counters | `tracing::span` + `metrics` crate or Prometheus exporter |
+| Profiler / flamegraph | `tokio-console` (async), `perf` / `samply` (CPU) |
 
 ---
 
@@ -373,6 +418,7 @@ Regardless of source language, follow this migration order:
 | 3 | **I/O boundary** | Replace HTTP handlers, DB queries, file I/O behind the same interfaces. |
 | 4 | **Concurrency** | Convert threads/coroutines/async tasks to tokio tasks. Measure, don't assume. |
 | 5 | **Full cutover** | Remove the source runtime. Keep FFI bridges for legacy compatibility. |
+| 6 | **Optimize** | Profile, reduce allocations, tune compile times (see [Compilation Time Tradeoffs](#10-compilation-time-tradeoffs)). |
 
 ## Cross-Reference
 
@@ -402,4 +448,4 @@ This skill is the master index. Each per-language skill contains:
 | `kotlin-to-rust` | Coroutine-based services, Android backends, Ktor to Axum |
 | `swift-to-rust` | iOS/macOS services, ARC to ownership, SwiftUI to Leptos |
 | `ruby-to-rust` | Rails/Sinatra migration, dynamic-to-static typing, block patterns |
-| `vue-to-rust` | Frontend WASM, reactive components |
+| `vue-to-rust` | :warning: Frontend/WASM only — browser-based, not a native binary |

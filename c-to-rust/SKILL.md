@@ -145,7 +145,7 @@ C's model is **programmer-managed**: you `malloc`, you `free`. Rust's model is *
 
 **C:**
 ```c
-// 手动分配和释放
+// manual allocation and deallocation
 typedef struct {
     int x;
     int y;
@@ -165,7 +165,7 @@ void point_free(Point* p) {
 
 **Rust:**
 ```rust
-// 所有权自动管理,无需手动释放
+// ownership manages automatically, no manual free needed
 pub struct Point {
     pub x: i32,
     pub y: i32,
@@ -176,14 +176,14 @@ impl Point {
         Box::new(Point { x, y })
     }
 }
-// Drop 自动调用,不需要 point_free 等价函数
+// Drop called automatically, no need for point_free equivalent
 ```
 
 ### Pattern 2: Opaque Handle / Newtype
 
 **C:**
 ```c
-// handle.h -- 不透明指针,隐藏实现细节
+// handle.h -- opaque pointer hides implementation details
 typedef struct Context Context;
 Context* context_create(void);
 void context_destroy(Context* ctx);
@@ -192,9 +192,9 @@ int context_do_work(Context* ctx, int input);
 
 **Rust:**
 ```rust
-// 使用 newtype 包装,无需指针技巧即可隐藏内部结构
+// using newtype wrapper, no pointer tricks needed to hide internals
 pub struct Context {
-    // 内部字段默认私有
+    // internal fields are private by default
     state: InnerState,
 }
 
@@ -213,7 +213,7 @@ impl Context {
 
 **C:**
 ```c
-// 返回特殊值 + 检查 errno
+// return sentinel value + check errno
 int read_file(const char* path, char** out_data, size_t* out_len) {
     FILE* f = fopen(path, "rb");
     if (!f) return -1;
@@ -235,7 +235,7 @@ int read_file(const char* path, char** out_data, size_t* out_len) {
     return 0;
 }
 
-// 调用端:
+// call site:
 char* data;
 size_t len;
 if (read_file("config.txt", &data, &len) != 0) {
@@ -246,7 +246,7 @@ if (read_file("config.txt", &data, &len) != 0) {
 
 **Rust:**
 ```rust
-// 使用 Result 和 ? 操作符,错误自动向上传播
+// using Result and ? operator, errors propagate upward automatically
 use std::fs;
 use std::io;
 
@@ -254,7 +254,7 @@ fn read_file(path: &str) -> io::Result<String> {
     fs::read_to_string(path)
 }
 
-// 调用端:
+// call site:
 fn main() -> anyhow::Result<()> {
     let data = read_file("config.txt")?;
     println!("{}", data);
@@ -266,7 +266,7 @@ fn main() -> anyhow::Result<()> {
 
 **C:**
 ```c
-// 手动管理动态数组的容量和长度
+// manually manage dynamic array capacity and length
 typedef struct {
     int* data;
     size_t len;
@@ -284,18 +284,18 @@ void vec_push(IntVec* v, int val) {
 
 **Rust:**
 ```rust
-// Vec 自动管理容量增长
+// Vec automatically manages capacity growth
 let mut v: Vec<i32> = Vec::new();
 v.push(42);
 v.extend(&[1, 2, 3]);
-// 容量在 push 时按 2x 策略自动增长,realloc 完全透明
+// capacity auto-grows by 2x on push, realloc is transparent
 ```
 
 ### Pattern 5: Callback → Closure / Channel
 
 **C:**
 ```c
-// 回调函数指针,通过 void* 传递上下文
+// callback function pointer, passes context via void*
 typedef void (*event_cb)(int event_id, void* user_data);
 
 void register_handler(event_cb cb, void* user_data) {
@@ -303,7 +303,7 @@ void register_handler(event_cb cb, void* user_data) {
     g_user_data = user_data;
 }
 
-// 使用端:
+// usage side:
 void my_handler(int event_id, void* user_data) {
     MyContext* ctx = (MyContext*)user_data;
     ctx->count++;
@@ -313,21 +313,21 @@ register_handler(my_handler, &ctx);
 
 **Rust:**
 ```rust
-// 闭包携带上下文,无需 void* 转换;或用 channel 解耦
+// closures carry context, no void* cast; or use channel for decoupling
 use std::sync::mpsc;
 
-// 方案 A: 闭包 (类型安全)
+// Option A: closure (type-safe)
 fn register_handler<F>(handler: F)
 where
     F: Fn(i32) + Send + 'static,
 {
-    // 存储 handler ...
+    // store handler ...
 }
 
-// 方案 B: channel (解耦生产者和消费者)
+// Option B: channel (decouple producer and consumer)
 let (tx, rx) = mpsc::channel::<i32>();
 std::thread::spawn(move || {
-    tx.send(42).unwrap(); // 事件通知
+    tx.send(42).unwrap(); // event notification
 });
 
 for event in rx {
@@ -339,7 +339,7 @@ for event in rx {
 
 **C:**
 ```c
-// 使用原始指针构建链表
+// building linked list with raw pointers
 typedef struct Node {
     int value;
     struct Node* next;
@@ -356,7 +356,7 @@ void list_free(Node* head) {
 
 **Rust:**
 ```rust
-// 使用 Box 表达所有权;Option 表达可空性
+// Box expresses ownership; Option expresses nullability
 pub struct Node {
     pub value: i32,
     pub next: Option<Box<Node>>,
@@ -374,15 +374,15 @@ impl Node {
         }
     }
 }
-// Drop 递归自动释放整个链表;长链可用迭代循环替代
+// Drop recursively frees entire list; use iterative loop for long chains
 
-// 对于超长链表(栈溢出风险),使用显式迭代 Drop:
+// for very long lists (stack overflow risk), use explicit iterative Drop:
 impl Drop for Node {
     fn drop(&mut self) {
         let mut curr = self.next.take();
         while let Some(mut node) = curr {
             curr = node.next.take();
-            // node 在此作用域结束时被释放
+            // node is freed at end of this scope
         }
     }
 }
@@ -395,14 +395,14 @@ The recommended strategy is **leaf-to-root**: port the leaf modules (those with 
 ### Exposing Rust to C
 
 ```rust
-// rust_lib.rs -- 通过 extern "C" 将 Rust 函数暴露给 C 代码
+// rust_lib.rs -- expose Rust functions to C code via extern "C"
 use std::ffi::CString;
 use std::os::raw::c_char;
 
-/// 解析配置,返回堆分配的 C 字符串(调用方负责释放)
+/// Parse config, returns heap-allocated C string (caller must free)
 #[no_mangle]
 pub extern "C" fn parse_config(path: *const c_char) -> *mut c_char {
-    // 安全的 Rust 实现
+    // safe Rust implementation
     let path = unsafe { std::ffi::CStr::from_ptr(path) }
         .to_str()
         .unwrap_or("");
@@ -410,7 +410,7 @@ pub extern "C" fn parse_config(path: *const c_char) -> *mut c_char {
     CString::new(result).unwrap().into_raw()
 }
 
-/// 释放由 parse_config 返回的字符串
+/// Free the string returned by parse_config
 #[no_mangle]
 pub extern "C" fn free_config_string(s: *mut c_char) {
     if !s.is_null() {
@@ -422,7 +422,7 @@ pub extern "C" fn free_config_string(s: *mut c_char) {
 ### Calling C from Rust
 
 ```rust
-// build.rs -- 链接现有的 C 代码
+// build.rs -- link existing C code
 fn main() {
     cc::Build::new()
         .file("c_src/legacy_parser.c")
@@ -430,7 +430,7 @@ fn main() {
     println!("cargo:rerun-if-changed=c_src/legacy_parser.c");
 }
 
-// 对应的 Rust 绑定:
+// corresponding Rust bindings:
 extern "C" {
     fn legacy_parse(input: *const c_char, len: usize) -> i32;
 }
@@ -480,40 +480,40 @@ cbindgen --config cbindgen.toml --crate my_crate --output rust_lib.h
 
 **Wrong:**
 ```rust
-// 不要：直接用 unsafe 模拟 malloc
+// WRONG: directly emulating malloc with unsafe
 let ptr: *mut Point = unsafe { std::alloc::alloc(std::alloc::Layout::new::<Point>()) as *mut Point };
 unsafe { std::alloc::dealloc(ptr as *mut u8, std::alloc::Layout::new::<Point>()); }
 ```
 
 **Right:**
 ```rust
-// 正确：使用 Box 或 Vec,让所有权系统管理内存
+// CORRECT: use Box or Vec, let the ownership system manage memory
 let point = Box::new(Point { x: 0, y: 0 });
-// 离开作用域时自动释放,无需手动 dealloc
+// automatically freed at scope exit, no manual dealloc needed
 
 let points: Vec<Point> = (0..100).map(|i| Point { x: i, y: i * 2 }).collect();
-// Vec 管理整个数组的内存
+// Vec manages the memory for the entire array
 ```
 
 ### Mistake 2: Using raw pointers where references would work
 
 **Wrong:**
 ```rust
-// 不要：继续使用原始指针传递数据
+// WRONG: continuing to pass data via raw pointers
 fn process(data: *const u8, len: usize) -> i32 {
     unsafe {
         let slice = std::slice::from_raw_parts(data, len);
         // ...
     }
-    // 调用方必须确保 data 有效,容易出错
+    // caller must ensure data is valid, error-prone
 }
 ```
 
 **Right:**
 ```rust
-// 正确：使用 &[u8] 切片,借用检查器保证安全
+// CORRECT: use &[u8] slice, borrow checker guarantees safety
 fn process(data: &[u8]) -> i32 {
-    // 无需 unsafe,编译器保证 data 有效
+    // no unsafe needed, compiler guarantees data validity
     data.iter().map(|&b| b as i32).sum()
 }
 ```
@@ -522,7 +522,7 @@ fn process(data: &[u8]) -> i32 {
 
 **Wrong:**
 ```rust
-// 不要：逐层检查错误并手动回滚
+// WRONG: checking errors level by level with manual rollback
 fn complex_operation() -> Result<(), Error> {
     let res1 = step1();
     if res1.is_err() { return Err(res1.unwrap_err()); }
@@ -538,20 +538,20 @@ fn complex_operation() -> Result<(), Error> {
 
 **Right:**
 ```rust
-// 正确：使用 ? 操作符和 Drop/Raii 自动回滚
+// CORRECT: use ? operator and Drop/RAII for automatic rollback
 struct ResourceGuard { /* ... */ }
 impl Drop for ResourceGuard {
     fn drop(&mut self) {
-        // 自动回滚逻辑
+        // auto-rollback logic
         self.rollback();
     }
 }
 
 fn complex_operation() -> Result<(), Error> {
-    let guard = ResourceGuard::acquire()?;  // 失败时自动返回 Err
+    let guard = ResourceGuard::acquire()?;  // returns Err on failure
     step1()?;
-    step2()?;  // 失败时 guard 的 Drop 自动执行回滚
-    std::mem::forget(guard);  // 成功时取消回滚
+    step2()?;  // guard Drop auto-rolls back on failure
+    std::mem::forget(guard);  // cancel rollback on success
     Ok(())
 }
 ```
@@ -560,16 +560,16 @@ fn complex_operation() -> Result<(), Error> {
 
 **Wrong:**
 ```rust
-// 不要：用 static mut 替代 #define 全局可变状态
+// WRONG: using static mut as #define global mutable state
 static mut LOG_LEVEL: i32 = 1;
 ```
 
 **Right:**
 ```rust
-// 正确：使用 const,或者需要可变时使用 Atomic + OnceCell
-const LOG_LEVEL: i32 = 1;  // 编译期常量
+// CORRECT: use const, or Atomic + OnceCell when mutability is needed
+const LOG_LEVEL: i32 = 1;  // compile-time constant
 
-// 需要运行时可变时:
+// when runtime mutability is needed:
 use std::sync::atomic::{AtomicI32, Ordering};
 static LOG_LEVEL_RT: AtomicI32 = AtomicI32::new(1);
 LOG_LEVEL_RT.store(2, Ordering::Relaxed);
@@ -579,17 +579,17 @@ LOG_LEVEL_RT.store(2, Ordering::Relaxed);
 
 **Wrong:**
 ```rust
-// 不要：用 unsafe 和原始指针在线程间共享可变数据
+// WRONG: using unsafe and raw pointers to share mutable data across threads
 let mut data = vec![1, 2, 3];
 let ptr: *mut Vec<i32> = &mut data;
 std::thread::spawn(move || {
-    unsafe { (*ptr).push(4); }  // 数据竞争!
+    unsafe { (*ptr).push(4); }  // data race!
 });
 ```
 
 **Right:**
 ```rust
-// 正确：使用 Arc<Mutex<T>> 安全地在线程间共享数据
+// CORRECT: use Arc<Mutex<T>> to safely share data across threads
 let data = std::sync::Arc::new(std::sync::Mutex::new(vec![1, 2, 3]));
 let data_clone = data.clone();
 std::thread::spawn(move || {
@@ -601,7 +601,7 @@ std::thread::spawn(move || {
 
 **Wrong:**
 ```rust
-// 不要：继续使用 void* / *mut c_void 假装泛型
+// WRONG: continuing to use void* / *mut c_void as fake generics
 fn generic_push(vec: *mut c_void, value: *const c_void, elem_size: usize) {
     unsafe { /* 手动 memcpy */ }
 }
@@ -609,11 +609,11 @@ fn generic_push(vec: *mut c_void, value: *const c_void, elem_size: usize) {
 
 **Right:**
 ```rust
-// 正确：使用真正的泛型,编译器做代码生成
+// CORRECT: use real generics, compiler does code generation
 fn generic_push<T>(vec: &mut Vec<T>, value: T) {
     vec.push(value);
 }
-// 或者用 trait 约束:
+// or with trait bounds:
 fn generic_push_trait<T: Clone>(vec: &mut Vec<T>, value: &T) {
     vec.push(value.clone());
 }

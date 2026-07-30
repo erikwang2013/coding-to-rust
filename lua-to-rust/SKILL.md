@@ -58,7 +58,7 @@ enum LuaValue {
     Array(Vec<LuaValue>),
 }
 
-// 或者为已知结构定义具体 struct
+// or define a concrete struct for known shapes
 #[derive(Debug, Clone)]
 struct Player {
     name: String,
@@ -94,13 +94,13 @@ use std::cell::RefCell;
 
 // Rust:
 struct Node {
-    parent: RefCell<Weak<Node>>,   // Weak 打破循环引用
+    parent: RefCell<Weak<Node>>,   // Weak breaks reference cycles
     child: RefCell<Option<Rc<Node>>>,
 }
 
 impl Drop for Node {
     fn drop(&mut self) {
-        // __gc 元方法的 Rust 等价
+        // Rust equivalent of __gc metamethod
         tracing::debug!("Node dropped");
     }
 }
@@ -134,7 +134,7 @@ use futures::stream::{self, Stream};
 fn range_gen(n: u64) -> impl Stream<Item = u64> {
     stream::iter(1..=n)
 }
-// 或使用 async-generator 语法（nightly 或 genawaiter crate）
+// or use async-generator syntax (nightly or genawaiter crate)
 ```
 
 ### Error-Safe Coroutine Resume
@@ -153,7 +153,7 @@ where
     f().map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
 }
 
-// 或捕获 panic:
+// or catch panics:
 fn safe_panic<F, T>(f: F) -> Result<T, Box<dyn std::any::Any + Send>>
 where
     F: FnOnce() -> T + std::panic::UnwindSafe,
@@ -323,12 +323,12 @@ fn lua_style_gsub(input: &str) -> String {
 // end
 // return M
 
-// Rust — 写在 src/greeting.rs:
+// Rust — in src/greeting.rs:
 pub fn hello(name: &str) -> String {
     format!("Hello {name}")
 }
 
-// 在 src/lib.rs 或 src/main.rs 中:
+// in src/lib.rs or src/main.rs:
 // mod greeting;
 // use greeting::hello;
 ```
@@ -358,12 +358,12 @@ fn find_item(items: &[String], target: &str) -> (bool, Option<usize>) {
 //   return total
 // end
 
-// Rust — 使用切片:
+// Rust — using slices:
 fn sum(args: &[i64]) -> i64 {
     args.iter().sum()
 }
 
-// 可变参数宏（真可变参数）:
+// variadic macro (true variadic):
 macro_rules! sum {
     ($($x:expr),*) => {
         {
@@ -403,7 +403,7 @@ impl Animal {
     }
 }
 
-// 继承用 trait — Lua metatable __index 委托:
+// inheritance via trait — Lua metatable __index delegation:
 // Dog extends Animal
 struct Dog {
     animal: Animal,
@@ -434,7 +434,7 @@ match risky_function() {
     Err(e) => tracing::error!("Operation failed: {e}"),
 }
 
-// Result 组合子与 pcall 链等价:
+// Result combinators are equivalent to pcall chains:
 let outcome = risky_function()
     .and_then(|val| another_op(&val))
     .map(|final_val| format!("processed: {final_val}"));
@@ -452,7 +452,7 @@ let outcome = risky_function()
 // Rust:
 fn counter() -> impl FnMut() -> i32 {
     let mut count = 0;
-    move || {           // move 关键字捕获所有权
+    move || {           // move keyword captures ownership
         count += 1;
         count
     }
@@ -462,7 +462,7 @@ fn counter() -> impl FnMut() -> i32 {
 ### Pattern 7: Iterator Generators
 
 ```rust
-// Lua — 无状态迭代器:
+// Lua — stateless iterator:
 // function range_iter(state, n)
 //   if state > n then return nil end
 //   return state + 1, state
@@ -517,18 +517,18 @@ impl UserData for Config {
 fn run_legacy_script() -> mlua::Result<()> {
     let lua = Lua::new();
 
-    // 暴露 Rust 配置给 Lua
+    // expose Rust config to Lua
     let config = Config { max_retries: 3, timeout_ms: 5000 };
     lua.globals().set("config", config)?;
 
-    // 注册 Rust 函数供 Lua 调用
+    // register Rust function for Lua to call
     let log_fn = lua.create_function(|_, msg: String| {
         tracing::info!("[lua] {msg}");
         Ok(())
     })?;
     lua.globals().set("log_info", log_fn)?;
 
-    // 执行遗留 Lua 脚本
+    // execute legacy Lua script
     lua.load(r#"
         log_info("Starting with timeout: " .. config:get_timeout() .. "ms")
     "#).exec()?;
@@ -550,43 +550,43 @@ fn run_legacy_script() -> mlua::Result<()> {
 ### Mistake 1: 1-Based to 0-Based Index Confusion
 
 ```rust
-// 错误 — Lua 程序员常见的 1-index 习惯:
+// WRONG — Lua programmers common 1-index habit:
 fn get_first<T>(items: &[T]) -> &T {
-    &items[1]  // 运行时 panic 或取到错误元素
+    &items[1]  // runtime panic or wrong element
 }
 
-// 正确:
+// CORRECT:
 fn get_first<T>(items: &[T]) -> Option<&T> {
-    items.first()  // Rust 数组和切片从 0 开始
+    items.first()  // Rust arrays and slices start at 0
 }
 ```
 
 ### Mistake 2: Overusing Rc<RefCell<T>> — Lua GC Emulation
 
 ```rust
-// 错误 — 试图用 Rc<RefCell<>> 模拟 Lua 的全局可变表:
+// WRONG — trying to emulate Lua global mutable table with Rc<RefCell<>>:
 type Globals = Rc<RefCell<HashMap<String, Rc<RefCell<LuaValue>>>>>;
 
-// 正确 — 使用结构化的状态管理:
+// CORRECT — use structured state management:
 #[derive(Debug)]
 struct AppState {
     config: Config,
     players: HashMap<String, Player>,
-    // 各模块拥有自己的数据
+    // each module owns its own data
 }
-// 需要共享的地方才用 Arc<RwLock<T>>，而不是全局滥用
+// use Arc<RwLock<T>> only where sharing is needed, not globally
 ```
 
 ### Mistake 3: String Concatenation in Hot Loops
 
 ```rust
-// 错误 — 模仿 Lua 的 .. 操作符:
+// WRONG — imitating Lua .. operator:
 let mut result = String::new();
 for item in &items {
-    result = result + &format!("{item},"); // 每次分配新 String
+    result = result + &format!("{item},"); // allocates new String each time
 }
 
-// 正确 — 使用 writeln! 或 join:
+// CORRECT — use writeln! or join:
 let result = items.iter()
     .map(|s| s.as_str())
     .collect::<Vec<_>>()
@@ -596,13 +596,13 @@ let result = items.iter()
 ### Mistake 4: Using panic! Instead of Result for Recoverable Errors
 
 ```rust
-// 错误 — 模仿 Lua error() 模式:
+// WRONG — imitating Lua error() pattern:
 fn load_config(path: &str) -> Config {
-    let content = std::fs::read_to_string(path).unwrap(); // 文件不存在则 panic
-    serde_json::from_str(&content).unwrap()               // 解析失败则 panic
+    let content = std::fs::read_to_string(path).unwrap(); // panics if file missing
+    serde_json::from_str(&content).unwrap()               // panics if parse fails
 }
 
-// 正确 — 返回 Result，类似 pcall:
+// CORRECT — return Result, like pcall:
 fn load_config(path: &str) -> Result<Config, Box<dyn std::error::Error>> {
     let content = std::fs::read_to_string(path)?;
     let config = serde_json::from_str(&content)?;
@@ -613,13 +613,13 @@ fn load_config(path: &str) -> Result<Config, Box<dyn std::error::Error>> {
 ### Mistake 5: Assuming Nil/None Semantics in Collections
 
 ```rust
-// 错误 — Lua 的 table 允许空洞:
+// WRONG — Lua tables allow gaps:
 let mut items: Vec<Option<String>> = vec![None, None];
-items[5] = Some("hello".into()); // 索引越界 panic
+items[5] = Some("hello".into()); // index out of bounds panic
 
-// 正确 — 使用 HashMap 表示稀疏集合:
+// CORRECT — use HashMap for sparse collections:
 let mut items: HashMap<usize, String> = HashMap::new();
-items.insert(5, "hello".into()); // 安全且语义正确
+items.insert(5, "hello".into()); // safe and semantically correct
 ```
 
 ## Reference Implementations

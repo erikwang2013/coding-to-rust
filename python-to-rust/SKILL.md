@@ -981,7 +981,7 @@ let first = &s[..1];  // PANIC: byte index 1 is not a char boundary
 
 // CORRECT: respect UTF-8 byte boundaries
 let s = "你好世界";
-let first_char = s.chars().next().unwrap();  // '你'
+let first_char = s.chars().next().unwrap();  // '你' (Chinese character, 3 bytes)
 // For slicing: s.char_indices() or the unicode-segmentation crate
 ```
 

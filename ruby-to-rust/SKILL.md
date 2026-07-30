@@ -429,6 +429,254 @@ impl Timestampable for Post {
 }
 ```
 
+
+### 6. Rails Controller → Axum Handler
+
+```ruby
+# Ruby: Rails controller with before_action and strong params
+class OrdersController < ApplicationController
+  before_action :authenticate_user!
+  before_action :set_order, only: [:show]
+
+  def create
+    @order = current_user.orders.build(order_params)
+    if @order.save
+      OrderMailer.confirmation(@order).deliver_later
+      render json: @order, status: :created
+    else
+      render json: { errors: @order.errors }, status: :unprocessable_entity
+    end
+  end
+
+  private
+
+  def order_params
+    params.require(:order).permit(:product_id, :quantity, :address)
+  end
+
+  def set_order
+    @order = current_user.orders.find(params[:id])
+  end
+end
+```
+
+```rust
+// Rust (Axum): middleware replaces before_action; extractors replace strong params
+use axum::{Router, routing::{get, post}, extract::{State, Path, Json}, middleware};
+use tower::ServiceBuilder;
+
+async fn create_order(
+    State(state): State<Arc<AppState>>,
+    Extension(user): Extension<AuthUser>, // from auth middleware, like before_action
+    Json(req): Json<CreateOrderRequest>,  // typed, like strong params
+) -> Result<(StatusCode, Json<OrderResponse>), AppError> {
+    let mut tx = state.db.begin().await?;
+    let order = sqlx::query_as::<_, Order>(
+        "INSERT INTO orders (...) VALUES (...) RETURNING *"
+    )
+    .bind(&user.id)
+    .bind(&req.product_id)
+    .bind(req.quantity)
+    .fetch_one(&mut *tx)
+    .await?;
+    tx.commit().await?;
+
+    // background email delivery (like deliver_later)
+    tokio::spawn(send_confirmation_email(state.email.clone(), order.clone()));
+
+    Ok((StatusCode::CREATED, Json(order.into())))
+}
+
+let app = Router::new()
+    .route("/orders", post(create_order).get(list_orders))
+    .layer(ServiceBuilder::new()
+        .layer(middleware::from_fn(auth_middleware))
+        .layer(tower_http::trace::TraceLayer::new_for_http()));
+```
+
+### 7. Sidekiq Worker → Tokio Background Task
+
+```ruby
+# Ruby: Sidekiq worker for async processing
+class OrderFulfillmentWorker
+  include Sidekiq::Worker
+  sidekiq_options queue: :high, retry: 3
+
+  def perform(order_id)
+    order = Order.find(order_id)
+    inventory = InventoryService.new
+    inventory.reserve(order.line_items)
+    shipping = ShippingService.new
+    shipping.create_label(order)
+    order.update!(status: 'fulfilled')
+  rescue InventoryError => e
+    order.update!(status: 'backordered')
+    OrderMailer.backordered(order).deliver_later
+    raise
+  end
+end
+
+# Enqueue:
+OrderFulfillmentWorker.perform_async(order.id)
+```
+
+```rust
+// Rust: tokio task + Redis queue (like Sidekiq)
+use redis::AsyncCommands;
+use tokio::sync::Semaphore;
+
+async fn fulfill_order_worker(
+    db: PgPool,
+    redis: redis::aio::MultiplexedConnection,
+    concurrency: Arc<Semaphore>,  // like Sidekiq concurrency limit
+) -> Result<(), AppError> {
+    loop {
+        // block until a job is available (BRPOP like Sidekiq)
+        let _permit = concurrency.acquire().await.unwrap();
+        let (_, order_id): (String, i64) = redis
+            .clone()
+            .brpop("queue:order_fulfillment", 0.0)
+            .await?;
+
+        let db = db.clone();
+        tokio::spawn(async move {
+            match process_fulfillment(&db, order_id).await {
+                Ok(()) => tracing::info!(order_id, "fulfilled"),
+                Err(e) => {
+                    tracing::error!(order_id, error = %e, "fulfillment failed");
+                    // retry logic: push back to queue
+                }
+            }
+        });
+    }
+}
+
+async fn process_fulfillment(db: &PgPool, order_id: i64) -> Result<(), AppError> {
+    let mut tx = db.begin().await?;
+    let order = sqlx::query_as::<_, Order>("SELECT * FROM orders WHERE id = $1 FOR UPDATE")
+        .bind(order_id)
+        .fetch_one(&mut *tx)
+        .await?;
+
+    reserve_inventory(&mut tx, &order).await?;
+    create_shipping_label(&mut tx, &order).await?;
+    sqlx::query("UPDATE orders SET status = 'fulfilled' WHERE id = $1")
+        .bind(order_id)
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+// Startup: spawn worker tasks
+for _ in 0..num_workers {
+    tokio::spawn(fulfill_order_worker(db.clone(), redis.clone(), sema.clone()));
+}
+```
+
+### 8. ActiveRecord Callbacks → Explicit Middleware / Constructor Validation
+
+```ruby
+# Ruby: ActiveRecord model with callbacks and validations
+class Order < ApplicationRecord
+  before_validation :generate_order_number, on: :create
+  before_save :calculate_total
+  after_commit :notify_customer, on: :create
+
+  validates :customer_email, presence: true, format: { with: URI::MailTo::EMAIL_REGEXP }
+  validates :quantity, numericality: { greater_than: 0 }
+
+  private
+
+  def generate_order_number
+    self.order_number = "ORD-#{Time.now.strftime('%Y%m%d')}-#{SecureRandom.hex(4)}"
+  end
+
+  def calculate_total
+    self.total = line_items.sum { |li| li.price * li.quantity }
+  end
+
+  def notify_customer
+    OrderMailer.confirmation(self).deliver_later
+  end
+end
+```
+
+```rust
+// Rust: explicit pipeline — no implicit callbacks
+#[derive(Debug, Clone, sqlx::FromRow, serde::Serialize)]
+pub struct Order {
+    pub id: i64,
+    pub order_number: String,
+    pub customer_email: String,
+    pub quantity: i32,
+    pub total: f64,
+    pub status: String,
+}
+
+// Step 1: validate at boundary (like ActiveRecord validations)
+#[derive(Debug, serde::Deserialize)]
+pub struct CreateOrderRequest {
+    pub customer_email: String,
+    pub quantity: i32,
+    pub line_items: Vec<LineItemInput>,
+}
+
+impl CreateOrderRequest {
+    pub fn validate(self) -> Result<ValidatedOrder, ValidationError> {
+        if self.customer_email.is_empty() || !self.customer_email.contains('@') {
+            return Err(ValidationError("invalid email".into()));
+        }
+        if self.quantity <= 0 {
+            return Err(ValidationError("quantity must be positive".into()));
+        }
+        Ok(ValidatedOrder {
+            order_number: Self::generate_order_number(),
+            customer_email: self.customer_email,
+            quantity: self.quantity,
+            total: self.line_items.iter().map(|li| li.price * li.quantity).sum(),
+        })
+    }
+
+    fn generate_order_number() -> String {
+        format!("ORD-{}-{}", 
+            chrono::Utc::now().format("%Y%m%d"),
+            &uuid::Uuid::new_v4().to_string()[..8])
+    }
+}
+
+// Step 2: create (replaces before_save) and notify (replaces after_commit) — all explicit
+async fn place_order(
+    db: &PgPool,
+    email: &EmailService,
+    req: CreateOrderRequest,
+) -> Result<Order, AppError> {
+    let validated = req.validate()?;  // validations run first
+
+    let order = sqlx::query_as::<_, Order>(
+        "INSERT INTO orders (order_number, customer_email, quantity, total)
+         VALUES ($1, $2, $3, $4) RETURNING *"
+    )
+    .bind(&validated.order_number)
+    .bind(&validated.customer_email)
+    .bind(validated.quantity)
+    .bind(validated.total)
+    .fetch_one(db)
+    .await?;
+
+    // explicit notification (like after_commit) — no magic callbacks
+    tokio::spawn({
+        let email = email.clone();
+        let order = order.clone();
+        async move {
+            let _ = email.send_confirmation(&order).await;
+        }
+    });
+
+    Ok(order)
+}
+```
+
 ## FFI & Incremental Migration
 
 | Strategy | Tool | When |
@@ -560,3 +808,5 @@ let upper = name.to_uppercase();  // new String, name unchanged
 - **lua-to-rust**: Embedded scripting and DSL migration; dynamic typing to struct/enum
 - **nodejs-to-rust**: Async runtime migration; shared EventMachine/tokio patterns
 - **java-to-rust**: Enterprise patterns; Spring Boot/Rails service architecture
+- **go-to-rust**: Goroutine/fiber concurrency mapping; shared M:N scheduling concepts
+- **kotlin-to-rust**: Shared null-safety and expression-oriented programming patterns

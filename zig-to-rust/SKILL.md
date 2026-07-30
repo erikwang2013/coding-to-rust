@@ -215,7 +215,7 @@ Zig's concurrency model is still evolving (no stable async/await). Rust has a ma
 
 **Zig:**
 ```zig
-// comptime 泛型: 编译期根据类型生成代码
+// comptime generics: generate code at compile time based on type
 fn Matrix(comptime T: type, comptime rows: comptime_int, comptime cols: comptime_int) type {
     return struct {
         data: [rows * cols]T,
@@ -231,7 +231,7 @@ const Mat3x4 = Matrix(f32, 3, 4);
 
 **Rust:**
 ```rust
-// 使用 const generics 实现编译期维度参数化
+// using const generics for compile-time dimension parameterization
 #[derive(Debug, Clone)]
 pub struct Matrix<T, const ROWS: usize, const COLS: usize> {
     data: [T; ROWS * COLS],
@@ -254,7 +254,7 @@ type Mat3x4 = Matrix<f32, 3, 4>;
 
 **Zig:**
 ```zig
-// Zig 错误集: 隐式枚举,自动合并
+// Zig error sets: implicit enum, auto-merged
 const ParserError = error{
     UnexpectedEof,
     InvalidToken,
@@ -267,13 +267,13 @@ fn parse(input: []const u8) ParserError!Ast {
     return Ast{};
 }
 
-// 错误传播:
+// error propagation:
 const ast = try parse(data);
 ```
 
 **Rust:**
 ```rust
-// 使用 thiserror 定义结构化错误枚举
+// define structured error enum with thiserror
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -296,7 +296,7 @@ fn parse(input: &str) -> Result<Ast, ParserError> {
     Ok(Ast {})
 }
 
-// 错误传播: ? 操作符等价于 try
+// error propagation: ? operator is equivalent to try
 let ast = parse(data)?;
 ```
 
@@ -304,7 +304,7 @@ let ast = parse(data)?;
 
 **Zig:**
 ```zig
-// defer 保证退出作用域时执行清理代码
+// defer guarantees cleanup code runs on scope exit
 fn processFile(path: []const u8) !void {
     const file = try std.fs.cwd().openFile(path, .{});
     defer file.close();
@@ -315,26 +315,26 @@ fn processFile(path: []const u8) !void {
     var arena = std.heap.ArenaAllocator.init(allocator);
     defer arena.deinit();
 
-    // 使用 file 和 arena ...
-    // 退出时 file.close() 和 arena.deinit() 自动执行
+    // use file and arena ...
+    // on exit file.close() and arena.deinit() run automatically
 }
 ```
 
 **Rust:**
 ```rust
-// Drop trait 实现 RAII: 退出作用域自动清理
+// Drop trait implements RAII: auto-cleanup at scope exit
 use std::fs::File;
 use std::io::Read;
 
 fn process_file(path: &str) -> std::io::Result<()> {
-    let mut file = File::open(path)?;       // Drop 时自动关闭
+    let mut file = File::open(path)?;       // auto-closes on Drop
     let mut buf = [0u8; 4096];
     let n = file.read(&mut buf)?;
 
-    let arena = bumpalo::Bump::new();       // Drop 时自动释放全部内存
+    let arena = bumpalo::Bump::new();       // auto-frees all memory on Drop
 
-    // 使用 file 和 arena ...
-    // 作用域退出时,arena 和 file 的 Drop 自动执行
+    // use file and arena ...
+    // arena and file Drop run automatically at scope exit
     Ok(())
 }
 ```
@@ -343,9 +343,9 @@ fn process_file(path: &str) -> std::io::Result<()> {
 
 **Zig:**
 ```zig
-// 可选类型和错误联合的处理
+// handling optional types and error unions
 fn getConfig(key: []const u8) ?[]const u8 {
-    // 返回 null 表示不存在
+    // return null to indicate absence
 }
 
 fn lookupOrDefault(key: []const u8, default: []const u8) []const u8 {
@@ -359,9 +359,9 @@ fn requireConfig(key: []const u8) ![]const u8 {
 
 **Rust:**
 ```rust
-// Option 和 Result 组合子链式处理
+// Option and Result combinator chaining
 fn get_config(key: &str) -> Option<&str> {
-    // 返回 None 表示不存在
+    // returns None to indicate absence
 }
 
 fn lookup_or_default(key: &str, default: &str) -> &str {
@@ -377,7 +377,7 @@ fn require_config(key: &str) -> Result<&str, ConfigError> {
 
 **Zig:**
 ```zig
-// Zig: 显式传递分配器
+// Zig: explicit allocator passing
 fn buildTree(allocator: std.mem.Allocator, depth: u32) !*Node {
     const node = try allocator.create(Node);
     node.value = depth;
@@ -397,7 +397,7 @@ fn freeTree(allocator: std.mem.Allocator, node: *Node) void {
 
 **Rust:**
 ```rust
-// Rust: 所有权系统自动管理分配和释放
+// Rust: ownership system auto-manages allocation and deallocation
 fn build_tree(depth: u32) -> Box<Node> {
     let mut node = Box::new(Node { value: depth, left: None, right: None });
     if depth > 0 {
@@ -406,15 +406,15 @@ fn build_tree(depth: u32) -> Box<Node> {
     }
     node
 }
-// 整个树在 Box<Node> 离开作用域时自动递归释放
-// 如需显式迭代释放(防止栈溢出):
+// entire tree auto-freed recursively when Box<Node> leaves scope
+// for explicit iterative free (prevent stack overflow):
 impl Drop for Node {
     fn drop(&mut self) {
         let mut stack = vec![self.left.take(), self.right.take()];
         while let Some(Some(mut node)) = stack.pop() {
             stack.push(node.left.take());
             stack.push(node.right.take());
-            // node 在此处被释放
+            // node is freed here
         }
     }
 }
@@ -424,7 +424,7 @@ impl Drop for Node {
 
 **Zig:**
 ```zig
-// Zig switch: 穷举匹配,编译期检查完整性
+// Zig switch: exhaustive match, compile-time completeness check
 const Event = union(enum) {
     click: struct { x: i32, y: i32 },
     keypress: struct { code: u8, modifiers: u8 },
@@ -442,7 +442,7 @@ fn handle(ev: Event) void {
 
 **Rust:**
 ```rust
-// Rust match: 穷举模式匹配,编译器保证完整性
+// Rust match: exhaustive pattern matching, compiler guarantees completeness
 pub enum Event {
     Click { x: i32, y: i32 },
     KeyPress { code: u8, modifiers: u8 },
@@ -455,7 +455,7 @@ fn handle(ev: Event) {
         Event::KeyPress { code, modifiers } => println!("key {code} mod {modifiers}"),
         Event::Quit => println!("quitting"),
     }
-    // 如果漏掉某个变体,编译器报错 -- 与 Zig 一样穷举检查
+    // missing a variant triggers compiler error -- same exhaustive check as Zig
 }
 ```
 
@@ -463,7 +463,7 @@ fn handle(ev: Event) {
 
 **Zig:**
 ```zig
-// packed struct: 位精确布局,适合协议头和硬件寄存器
+// packed struct: bit-exact layout, suitable for protocol headers and hardware registers
 const TCPHeader = packed struct {
     src_port: u16,
     dst_port: u16,
@@ -480,8 +480,8 @@ const TCPHeader = packed struct {
 
 **Rust:**
 ```rust
-// 使用 bitflags 或手工位操作; #[repr(C)] 保证 C 兼容布局
-// 方案 A: 使用 deku crate 做位级序列化
+// use bitflags or manual bit ops; #[repr(C)] ensures C-compatible layout
+// Option A: use deku crate for bit-level serialization
 use deku::prelude::*;
 
 #[derive(Debug, PartialEq, DekuRead, DekuWrite)]
@@ -499,8 +499,8 @@ pub struct TcpHeader {
     pub urgent_ptr: u16,
 }
 
-// 方案 B: 使用 bitfield crate 或手工位运算
-// 对于简单场景,直接读字节然后用 >> 和 & 提取位域
+// Option B: use bitfield crate or manual bit operations
+// for simple cases, read bytes and extract bitfields with >> and &
 ```
 
 ## FFI & Incremental Migration
@@ -518,7 +518,7 @@ pub struct TcpHeader {
 ### Exposing Rust to Zig (via C ABI)
 
 ```rust
-// rust_engine.rs -- Rust 侧导出 C ABI
+// rust_engine.rs -- Rust side exporting C ABI
 use std::ffi::{c_char, CStr, CString};
 
 #[derive(Default)]
@@ -560,7 +560,7 @@ pub extern "C" fn engine_free_string(s: *mut c_char) {
 ```
 
 ```zig
-// zig端调用Rust导出的C ABI函数
+// Zig side calling Rust-exported C ABI functions
 const c = @cImport({
     @cInclude("rust_engine.h");
 });
@@ -572,7 +572,7 @@ pub fn main() !void {
     const input = "hello from zig";
     const output = c.engine_process(engine, input);
     defer c.engine_free_string(output);
-    // 使用 output ...
+    // use output ...
 }
 ```
 
@@ -581,12 +581,12 @@ pub fn main() !void {
 ```rust
 // build.rs
 fn main() {
-    // 前提: 需要 zig build-exe 或 zig build-lib 生成 .a / .so
+    // prerequisite: need zig build-exe or zig build-lib to produce .a / .so
     println!("cargo:rustc-link-lib=zig_lib");
     println!("cargo:rustc-link-search=native=/path/to/zig/build");
 }
 
-// ffi.rs -- Rust 侧绑定
+// ffi.rs -- Rust side bindings
 extern "C" {
     fn zig_parse_protocol(data: *const u8, len: usize) -> i32;
     fn zig_serialize(data: *const u8, len: usize, out: *mut *mut u8, out_len: *mut usize) -> i32;
@@ -599,29 +599,29 @@ extern "C" {
 
 **Wrong:**
 ```rust
-// 不要: 在 Rust 中手动调用清理函数模拟 Zig 的 defer
+// WRONG: manually calling cleanup functions to emulate Zig's defer in Rust
 fn process() -> Result<(), Error> {
     let file = File::open("data.bin")?;
-    // ... 使用 file ...
-    // 错误: 每个返回点都需要记得清理
-    // 容易在早退时遗漏
+    // ... use file ...
+    // WRONG: every return point needs to remember cleanup
+    // easy to miss on early return
 }
 ```
 
 **Right:**
 ```rust
-// 正确: 依赖 Drop 自动清理; 用 scope 精确控制生命周期
+// CORRECT: rely on Drop for auto-cleanup; use scopes to control lifetime precisely
 fn process() -> Result<(), Error> {
     let file = File::open("data.bin")?;
-    // Drop 自动关闭文件句柄,无论函数如何退出
+    // Drop auto-closes file handle regardless of how function exits
     // ...
 
-    // 需要提前释放: 用 scope
+    // need early release: use scope
     {
         let temp = File::create("temp.bin")?;
-        // temp 在此作用域结束时被关闭
+        // temp is closed at end of this scope
     }
-    // temp 已经被释放
+    // temp is already freed
     Ok(())
 }
 ```
@@ -630,15 +630,15 @@ fn process() -> Result<(), Error> {
 
 **Wrong:**
 ```rust
-// 不要: 每个 anytype 都翻译成类型擦除
+// WRONG: translating every anytype to type erasure
 fn process_any(input: Box<dyn std::any::Any>) {
-    // 类型信息丢失,需要到处 downcast_ref
+    // type information lost, downcast_ref needed everywhere
 }
 ```
 
 **Right:**
 ```rust
-// 正确: 使用泛型 + trait bound 实现编译期多态
+// CORRECT: use generics + trait bounds for compile-time polymorphism
 fn process<T: Processable>(input: T) {
     input.process();
 }
@@ -647,7 +647,7 @@ trait Processable {
     fn process(&self);
 }
 
-// 或者: 如果真的是开放集合,用 enum 而非 Any
+// or: if truly an open set, use enum instead of Any
 enum Input {
     Text(String),
     Binary(Vec<u8>),
@@ -659,23 +659,23 @@ enum Input {
 
 **Wrong:**
 ```rust
-// 不要: 将 Zig 的 @intFromPtr/@ptrFromInt 直译成 as 转换
+// WRONG: directly translating Zig's @intFromPtr/@ptrFromInt to as casts
 let addr = 0x1000usize;
 let ptr = addr as *const u8;
 let bytes = unsafe { std::slice::from_raw_parts(ptr, 16) };
-// 只在非常特定的场景(内存映射IO)中合法
+// only valid in very specific scenarios (memory-mapped IO)
 ```
 
 **Right:**
 ```rust
-// 正确: 内存映射 IO 使用专门的 crate
-// 方案 A: 如果是 mmap,使用 memmap2 crate
+// CORRECT: use dedicated crates for memory-mapped IO
+// Option A: if mmap, use memmap2 crate
 use memmap2::MmapOptions;
 let file = File::open("data.bin")?;
 let mmap = unsafe { MmapOptions::new().map(&file)? };
 let bytes: &[u8] = &mmap;
 
-// 方案 B: 如果真的是硬件地址(嵌入式/Legacy),隔离在 unsafe 模块
+// Option B: if truly hardware addresses (embedded/legacy), isolate in unsafe module
 #[cfg(target_os = "none")]
 mod hardware {
     const PERIPHERAL_BASE: usize = 0x4000_0000;
@@ -692,27 +692,27 @@ mod hardware {
 
 **Wrong:**
 ```rust
-// 不要: Zig 程序员习惯用 unsafe 标记所有"我知道这安全"的代码
+// WRONG: Zig programmers habit of using unsafe for 'I know this is safe' code
 unsafe fn fast_copy(src: &[u8], dst: &mut [u8]) {
     let len = src.len();
     std::ptr::copy_nonoverlapping(src.as_ptr(), dst.as_mut_ptr(), len);
 }
-// 到处 unsafe,失去了 Rust 的安全检查价值
+// unsafe everywhere, loses Rust safety checking value
 ```
 
 **Right:**
 ```rust
-// 正确: 将 unsafe 封装在最小的安全抽象内
-// copy_from_slice 已经是安全的,编译器会优化为 memcpy
+// CORRECT: encapsulate unsafe in minimal safe abstractions
+// copy_from_slice is already safe, compiler optimizes to memcpy
 fn fast_copy(src: &[u8], dst: &mut [u8]) {
     dst[..src.len()].copy_from_slice(src);
 }
 
-// 如果确实需要 unsafe(自定义SIMD等),隔离在安全接口内:
+// if unsafe is truly needed (custom SIMD etc.), isolate behind safe interface:
 mod simd_impl {
     #[cfg(target_arch = "x86_64")]
     pub fn copy_aligned(src: &[u8], dst: &mut [u8]) {
-        // SAFETY: 调用方保证对齐
+        // SAFETY: caller guarantees alignment
         unsafe { /* SSE/AVX 实现 */ }
     }
 
@@ -727,30 +727,30 @@ mod simd_impl {
 
 **Wrong:**
 ```rust
-// 不要: 将 build.zig 的灵活性完整复制到 build.rs
-// build.rs: 实现自定义交叉编译逻辑、目标检测、代码生成
+// WRONG: replicating build.zig's full flexibility in build.rs
+// build.rs: implementing custom cross-compilation logic, target detection, codegen
 fn main() {
     let target = std::env::var("TARGET").unwrap();
     if target.contains("x86_64") {
-        // 手动设置几十个编译选项...
+        // manually setting dozens of compiler options...
     }
-    // 手动调用 cc, 手动链接...
+    // manually calling cc, manually linking...
 }
 ```
 
 **Right:**
 ```rust
-// 正确: 利用 Cargo 的内置功能; build.rs 只处理 Cargo 做不到的事
+// CORRECT: leverage Cargo's built-in features; build.rs only handles what Cargo can't
 // build.rs
 fn main() {
-    // 只编译无法通过 Cargo 管理的 C/ASM 依赖
+    // only compile C/ASM dependencies that Cargo cannot manage
     cc::Build::new()
         .file("vendor/legacy_parser.c")
         .compile("legacy_parser");
     println!("cargo:rerun-if-changed=vendor/legacy_parser.c");
 }
 
-// Cargo.toml 使用 cfg 和 features 替代 build.zig 的大部分功能:
+// Cargo.toml uses cfg and features to replace most of build.zig's functionality:
 // [target.'cfg(target_os = "linux")'.dependencies]
 // mio = { version = "1", features = ["os-poll"] }
 ```

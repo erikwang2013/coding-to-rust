@@ -64,7 +64,7 @@ Julia is dynamically typed with optional type annotations for dispatch. Rust is 
 //     data::Vector{T}
 // end
 
-// Rust — 泛型 struct:
+// Rust — generic struct:
 struct MyContainer<T> {
     data: Vec<T>,
 }
@@ -79,7 +79,7 @@ impl<T> MyContainer<T> {
     }
 }
 
-// 带 trait 约束的泛型（类似 Julia 的 where T <: Number）:
+// generic with trait bound (like Julia where T <: Number):
 use std::fmt::Display;
 use std::ops::Add;
 
@@ -111,22 +111,22 @@ Julia uses a tracing garbage collector with a generational design. Rust uses own
 ```rust
 // Julia:
 // v = [1, 2, 3, 4, 5]
-// @view v[2:4]  # 返回数组视图，不复制数据
+// @view v[2:4]  # returns array view, no data copy
 
 use ndarray::{Array1, s};
 
 fn use_views() {
     let v = Array1::from_vec(vec![1, 2, 3, 4, 5]);
-    let view = v.slice(s![1..4]);  // 不可变视图，零拷贝
-    // view 借用 v，在 view 的生存期内 v 不可变
+    let view = v.slice(s![1..4]);  // immutable view, zero-copy
+    // view borrows v; v is immutable while view lives
     // println!("{}", view);
 
     let mut v_mut = v.clone();
     {
         let mut view_mut = v_mut.slice_mut(s![1..4]);
-        view_mut.fill(99);  // 通过视图修改原数组
+        view_mut.fill(99);  // modify original array through view
     }
-    // 视图离开作用域后，v_mut 重新可用
+    // v_mut usable again after view goes out of scope
 }
 ```
 
@@ -284,13 +284,13 @@ codegen-units = 1    # 最大化优化（类似 Julia 的 @code_native 输出）
 // Julia:
 // result = sin.(x) .+ cos.(y) .* 2
 
-// Rust — ndarray mapv（逐元素）:
+// Rust — ndarray mapv (element-wise):
 use ndarray::Array1;
 fn broadcast_op(x: &Array1<f64>, y: &Array1<f64>) -> Array1<f64> {
     x.mapv(|v| v.sin()) + &y.mapv(|v| v.cos()) * 2.0
 }
 
-// 使用 azip 宏（更高效，融合循环）:
+// using azip macro (more efficient, fused loops):
 fn broadcast_fused(x: &Array1<f64>, y: &Array1<f64>) -> Array1<f64> {
     ndarray::azip!((x in x, y in y) x.sin() + y.cos() * 2.0)
 }
@@ -301,13 +301,13 @@ fn broadcast_fused(x: &Array1<f64>, y: &Array1<f64>) -> Array1<f64> {
 ### Pattern 1: Multiple Dispatch to Trait / Enum
 
 ```rust
-// Julia — 多重分派:
+// Julia — multiple dispatch:
 // process(x::Int) = x * 2
 // process(x::String) = uppercase(x)
 // process(x::Vector) = sum(x)
 // process(x::Float64) = round(x, digits=2)
 
-// Rust — 方案 A: trait-based (静态分派，编译时):
+// Rust — Option A: trait-based (static dispatch, compile-time):
 trait Process {
     fn process(&self) -> Self;
 }
@@ -320,7 +320,7 @@ impl Process for String {
     fn process(&self) -> Self { self.to_uppercase() }
 }
 
-// Rust — 方案 B: enum dispatch (动态，运行时):
+// Rust — Option B: enum dispatch (dynamic, runtime):
 #[derive(Debug)]
 enum Value {
     Int(i32),
@@ -340,7 +340,7 @@ impl Value {
     }
 }
 
-// 推荐：大多数 Julia 多分派场景用 trait-based，少数需运行时切换的用 enum
+// recommendation: most Julia multiple-dispatch cases use traits; use enum when runtime switching is needed
 ```
 
 ### Pattern 2: Macro to Declarative/Proc Macro
@@ -364,29 +364,29 @@ macro_rules! twice {
 }
 // twice!(println!("hello"));
 
-// Rust — 更复杂的宏（proc macro，等价于 Julia 的 generated functions）:
-// Julia @generated 函数用 proc_macro 实现，在编译时生成代码
+// Rust — more complex macros (proc macro, equivalent to Julia generated functions):
+// Julia @generated functions become proc_macro, generating code at compile time
 ```
 
 ### Pattern 3: Lazy Evaluation with Iterators
 
 ```rust
-// Julia — 惰性求值:
+// Julia — lazy evaluation:
 // result = 1:10 |> (x -> x .|> abs2) |> sum
 
-// Rust — 迭代器链（零中间分配）:
+// Rust — iterator chain (zero intermediate allocation):
 fn pipeline() -> i32 {
     (1..=10)
-        .map(|x| x * x)    // abs2 => 平方
+        .map(|x| x * x)    // abs2 => square
         .sum()
 }
 
-// 更复杂的链:
+// more complex chain:
 fn complex_pipeline(data: &[f64]) -> Option<f64> {
     data.iter()
-        .filter(|&&x| x > 0.0)         // 只处理正值
-        .map(|&x| x.sqrt() * 2.0)       // 逐元素变换
-        .reduce(|acc, x| acc + x)       // 折叠求和
+        .filter(|&&x| x > 0.0)         // only positive values
+        .map(|&x| x.sqrt() * 2.0)       // element-wise transform
+        .reduce(|acc, x| acc + x)       // fold sum
 }
 ```
 
@@ -403,11 +403,11 @@ fn complex_pipeline(data: &[f64]) -> Option<f64> {
 //     end
 // end
 
-// Rust — 构造函数验证:
+// Rust — constructor validation:
 #[derive(Debug, Clone)]
 pub struct Config {
     host: String,
-    port: u16,  // u16 保证 0-65535
+    port: u16,  // u16 guarantees 0-65535
 }
 
 impl Config {
@@ -430,7 +430,7 @@ impl Config {
 // prob = ODEProblem(f, u0, (0.0, 10.0))
 // sol = solve(prob, Tsit5())
 
-// Rust — 使用 ode_solvers:
+// Rust — using ode_solvers:
 use ode_solvers::{Dopri5, OdeSolverState, System};
 
 struct ExponentialDecay { pub lambda: f64 }
@@ -499,14 +499,14 @@ fn process_dataframe(path: &str) -> PolarsResult<DataFrame> {
 ### jlrs: Rust Function Callable from Julia
 
 ```rust
-// Rust — 编译为 Julia 可调用的共享库:
+// Rust — compile as shared library callable from Julia:
 use jlrs::prelude::*;
 
 fn fast_sum(arr: ArrayView1<f64>) -> f64 {
     arr.iter().sum()
 }
 
-// 通过 ccall 从 Julia 调用:
+// call from Julia via ccall:
 // Julia:
 // result = ccall((:fast_sum, "libmyrust"), Float64, (Ptr{Float64}, Int64), data, length(data))
 ```
@@ -525,45 +525,45 @@ fn fast_sum(arr: ArrayView1<f64>) -> f64 {
 ### Mistake 1: Expecting JIT-Like Start-up Speed
 
 ```rust
-// Julia — 第一次调用时 JIT 编译，后续调用极快:
-// julia> @time f(100)  ->  首先 ~0.5s JIT，之后 ~ns 级
+// Julia — first call JIT-compiles, subsequent calls are fast:
+// julia> @time f(100)  ->  ~0.5s JIT first, then ~ns level
 
-// Rust — AOT 编译，启动极快，但无运行时优化:
-// 不会因为调用上下文而重新编译或优化
-// 解决方案: cargo build --release 中 lto = "fat" 和 codegen-units = 1
-// 最大化静态优化，类似 Julia 的稳态性能
+// Rust — AOT compiled, fast startup, no runtime optimization:
+// won't recompile or optimize based on call context
+// solution: use lto = "fat" and codegen-units = 1 in release profile
+// maximizes static optimization, similar to Julia steady-state performance
 ```
 
 ### Mistake 2: Trying to Reproduce Multiple Dispatch Exactly
 
 ```rust
-// 错误 — 试图复制完全动态的多重分派:
-// 使用 Any 类型和运行时类型检查 → 失去 Rust 优势
+// WRONG — trying to replicate fully dynamic multiple dispatch:
+// using Any type and runtime checks → loses Rust advantages
 
-// 正确 — 识别实际的分派模式:
-// 1. 如果分派目标在编译时已知 → trait + generics
-// 2. 如果只有少数几种类型 → enum
-// 3. 如果类型在运行时才知道 → Box<dyn Trait>
-// 大多数 Julia 代码中，多分派其实是静态可确定的
+// CORRECT — identify the actual dispatch pattern:
+// 1. if dispatch target is known at compile time → trait + generics
+// 2. if only a few types → enum
+// 3. if type is only known at runtime → Box<dyn Trait>
+// in most Julia code, multiple dispatch is actually statically resolvable
 ```
 
 ### Mistake 3: Over-allocating in Loops (Julia's GC Pattern)
 
 ```rust
-// 错误 — Julia 风格的自由分配（依赖 GC）:
+// WRONG — Julia-style free allocation (relying on GC):
 fn compute_bad(n: usize) -> Vec<f64> {
     let mut result = Vec::new();
     for i in 0..n {
-        let temp = vec![i as f64; 100];  // 每次循环分配，重复释放
+        let temp = vec![i as f64; 100];  // allocates per iteration, repeated frees
         result.push(temp.iter().sum());
     }
     result
 }
 
-// 正确 — 预分配并重用缓冲区:
+// CORRECT — pre-allocate and reuse buffer:
 fn compute_good(n: usize) -> Vec<f64> {
     let mut result = Vec::with_capacity(n);
-    let mut buffer = vec![0f64; 100];  // 重用同一个缓冲区
+    let mut buffer = vec![0f64; 100];  // reuse the same buffer
     for i in 0..n {
         buffer.fill(i as f64);
         result.push(buffer.iter().sum());
@@ -575,30 +575,30 @@ fn compute_good(n: usize) -> Vec<f64> {
 ### Mistake 4: Treating Rust Arrays as 1-Indexed
 
 ```rust
-// 错误 — Julia 的 1-index 习惯:
+// WRONG — Julia 1-index habit:
 fn get_element_bad(matrix: &ndarray::Array2<f64>, i: usize, j: usize) -> f64 {
-    matrix[(i, j)]  // Julia 习惯: (1,1) 是第一个元素
-    // Rust 中 (1,1) 实际上是第二行第二列！
+    matrix[(i, j)]  // Julia habit: (1,1) is the first element
+    // in Rust, (1,1) is actually the second row and column!
 }
 
-// 正确:
+// CORRECT:
 fn get_element_good(matrix: &ndarray::Array2<f64>, i: usize, j: usize) -> Option<&f64> {
     if i == 0 || j == 0 { return None; }
-    matrix.get((i - 1, j - 1))  // 将 1-based 索引转换为 0-based
+    matrix.get((i - 1, j - 1))  // convert 1-based indices to 0-based
 }
 ```
 
 ### Mistake 5: Unnecessary Mutable Patterns
 
 ```rust
-// 错误 — Julia 的 in-place 习惯:
+// WRONG — Julia in-place habit:
 fn add_noise_bad(data: &mut [f64]) {
     for i in 0..data.len() {
         data[i] += rand::random::<f64>() * 0.01;
     }
 }
 
-// 更好的 Rust 风格 — 函数式 + 允许编译器优化:
+// better Rust style — functional + allows compiler optimization:
 fn add_noise_good(data: &[f64]) -> Vec<f64> {
     use rand::Rng;
     let mut rng = rand::thread_rng();
@@ -606,21 +606,21 @@ fn add_noise_good(data: &[f64]) -> Vec<f64> {
         .map(|&v| v + rng.gen::<f64>() * 0.01)
         .collect()
 }
-// 只有在性能关键的内部循环中才用 &mut 版本
+// only use &mut version in performance-critical inner loops
 ```
 
 ### Mistake 6: Ignoring rustc Auto-Vectorization
 
 ```rust
-// Julia 开发者习惯显式使用 @simd / LoopVectorization.jl
-// Rust 编译器在 release 模式下自动向量化
+// Julia devs are used to explicit @simd / LoopVectorization.jl
+// Rust compiler auto-vectorizes in release mode
 
-// 无需手动标 simd，编译器已处理:
+// no need for manual simd annotations, compiler handles it:
 fn dot_product(a: &[f64], b: &[f64]) -> f64 {
     a.iter().zip(b.iter()).map(|(x, y)| x * y).sum()
 }
-// cargo build --release 自动使用 SSE/AVX/NEON
-// RUSTFLAGS="-C target-cpu=native" 可启用所有本地 CPU 特性
+// cargo build --release auto-uses SSE/AVX/NEON
+// RUSTFLAGS="-C target-cpu=native" enables all local CPU features
 ```
 
 ## Reference Implementations

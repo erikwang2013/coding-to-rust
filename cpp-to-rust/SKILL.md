@@ -190,7 +190,7 @@ C++11+ modern memory management (RAII, smart pointers, move semantics) translate
 
 **C++:**
 ```cpp
-// 基类,虚函数定义接口
+// base class, virtual functions define interface
 class Shape {
 public:
     virtual ~Shape() = default;
@@ -206,7 +206,7 @@ public:
     void scale(double factor) override { radius_ *= factor; }
 };
 
-// 使用:
+// usage:
 std::vector<std::unique_ptr<Shape>> shapes;
 shapes.push_back(std::make_unique<Circle>(5.0));
 for (const auto& s : shapes) {
@@ -216,7 +216,7 @@ for (const auto& s : shapes) {
 
 **Rust:**
 ```rust
-// trait 定义接口; struct 各自实现
+// trait defines interface; structs implement it
 pub trait Shape {
     fn area(&self) -> f64;
     fn scale(&mut self, factor: f64);
@@ -236,11 +236,11 @@ impl Shape for Circle {
     }
 }
 
-// 使用: Box<dyn Shape> 替代 unique_ptr<Shape>
+// usage: Box<dyn Shape> replaces unique_ptr<Shape>
 let mut shapes: Vec<Box<dyn Shape>> = vec![
     Box::new(Circle { radius: 5.0 }),
 ];
-// 或使用 enum 做静态分发(多数情况性能更好):
+// or use enum for static dispatch (better performance in most cases):
 enum ShapeEnum { Circle { radius: f64 }, Rectangle { w: f64, h: f64 } }
 ```
 
@@ -248,7 +248,7 @@ enum ShapeEnum { Circle { radius: f64 }, Rectangle { w: f64, h: f64 } }
 
 **C++:**
 ```cpp
-// C++20 concept 约束模板
+// C++20 concept-constrained template
 template<typename T>
 requires std::integral<T> || std::floating_point<T>
 T clamp(T value, T lo, T hi) {
@@ -260,14 +260,14 @@ T clamp(T value, T lo, T hi) {
 
 **Rust:**
 ```rust
-// 泛型 + trait bound,等价于 concept 约束
+// generic + trait bound, equivalent to concept constraint
 fn clamp<T: PartialOrd>(value: T, lo: T, hi: T) -> T {
     if value < lo { lo }
     else if value > hi { hi }
     else { value }
 }
 
-// 或使用 num_traits crate 做数值泛型约束:
+// or use num_traits crate for numeric generic bounds:
 use num_traits::Num;
 fn clamp_num<T: Num + PartialOrd + Copy>(value: T, lo: T, hi: T) -> T {
     if value < lo { lo } else if value > hi { hi } else { value }
@@ -278,7 +278,7 @@ fn clamp_num<T: Num + PartialOrd + Copy>(value: T, lo: T, hi: T) -> T {
 
 **C++:**
 ```cpp
-// 运行时多态,通过 vtable 分发
+// runtime polymorphism, dispatch via vtable
 class Handler {
 public:
     virtual ~Handler() = default;
@@ -311,7 +311,7 @@ impl Handler for LogHandler {
     }
 }
 
-// 使用 Box<dyn Handler> 做动态分发:
+// using Box<dyn Handler> for dynamic dispatch:
 let handlers: Vec<Box<dyn Handler>> = vec![
     Box::new(LogHandler),
 ];
@@ -340,7 +340,7 @@ impl Handler {
 
 **C++:**
 ```cpp
-// 异常用于错误传播
+// exceptions used for error propagation
 std::string read_config(const std::string& path) {
     std::ifstream file(path);
     if (!file.is_open()) {
@@ -351,7 +351,7 @@ std::string read_config(const std::string& path) {
     return buffer.str();
 }
 
-// 调用端:
+// call site:
 try {
     auto config = read_config("/etc/app.conf");
     process(config);
@@ -363,7 +363,7 @@ try {
 
 **Rust:**
 ```rust
-// Result<T, E> 替代异常,? 操作符传播错误
+// Result<T, E> replaces exceptions, ? operator propagates errors
 use std::fs;
 use std::io;
 
@@ -371,7 +371,7 @@ fn read_config(path: &str) -> io::Result<String> {
     fs::read_to_string(path)
 }
 
-// 调用端: 使用 ? 自动传播,或 match / unwrap 处理
+// call site: use ? for auto-propagation, or match / unwrap to handle
 fn main() -> anyhow::Result<()> {
     let config = read_config("/etc/app.conf")?;
     process(&config);
@@ -383,7 +383,7 @@ fn main() -> anyhow::Result<()> {
 
 **C++:**
 ```cpp
-// 移动语义转移所有权
+// move semantics transfer ownership
 class Buffer {
     std::vector<uint8_t> data_;
 public:
@@ -393,42 +393,42 @@ public:
         data_ = std::move(other.data_);
         return *this;
     }
-    // 删除拷贝
+    // delete copy
     Buffer(const Buffer&) = delete;
     Buffer& operator=(const Buffer&) = delete;
 };
 
 Buffer create_buffer() {
     std::vector<uint8_t> data(1024);
-    return Buffer(std::move(data));  // move 到返回值
+    return Buffer(std::move(data));  // move into return value
 }
 ```
 
 **Rust:**
 ```rust
-// 所有权转移是默认语义,无需特殊实现
+// ownership transfer is default semantics, no special implementation needed
 pub struct Buffer {
     data: Vec<u8>,
 }
 
 impl Buffer {
     pub fn new(data: Vec<u8>) -> Self {
-        Buffer { data }  // data 所有权转移进 Buffer,无需显式 move
+        Buffer { data }  // data ownership moves into Buffer, no explicit move needed
     }
 }
 
 fn create_buffer() -> Buffer {
     let data = vec![0u8; 1024];
-    Buffer::new(data)  // 所有权自然转移
+    Buffer::new(data)  // ownership transfers naturally
 }
-// 如果需要阻止 Clone: 直接不 derive Clone 即可
+// To prevent Clone: simply do not derive Clone
 ```
 
 ### Pattern 6: Singleton → OnceCell / Lazy
 
 **C++:**
 ```cpp
-// Meyer's Singleton (线程安全,懒加载)
+// Meyer's Singleton (thread-safe, lazy)
 class Config {
     Config() = default;
 public:
@@ -445,7 +445,7 @@ public:
 ```rust
 use std::sync::OnceLock;
 
-// OnceLock 实现懒加载单例(线程安全)
+// OnceLock implements lazy singleton (thread-safe)
 static CONFIG: OnceLock<Config> = OnceLock::new();
 
 pub fn config() -> &'static Config {
@@ -458,7 +458,7 @@ pub struct Config {
 
 impl Config {
     fn load() -> Result<Self, Box<dyn std::error::Error>> {
-        // 从文件或环境变量加载
+        // load from file or env var
         let url = std::env::var("DATABASE_URL")?;
         Ok(Config { database_url: url })
     }
@@ -479,7 +479,7 @@ auto result = data
 
 **Rust:**
 ```rust
-// 迭代器链式调用,语义相同
+// iterator chain, same semantics
 let result: Vec<i32> = data.iter()
     .filter(|&&x| x % 2 == 0)
     .map(|&x| x * 2)
@@ -500,7 +500,7 @@ let result: Vec<i32> = data.iter()
 ### Wrapping C++ in C ABI for Rust
 
 ```cpp
-// cpp_lib.h -- C++头文件(纯C ABI,供Rust调用)
+// cpp_lib.h -- C++ header (pure C ABI, for Rust to call)
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -516,7 +516,7 @@ void engine_free_string(char* s);
 }
 #endif
 
-// cpp_lib.cpp -- 实现
+// cpp_lib.cpp -- implementation
 Engine* engine_create(const char* config_path) {
     return reinterpret_cast<Engine*>(new CppEngine(config_path));
 }
@@ -529,12 +529,12 @@ void engine_destroy(Engine* e) {
 ### Rust Side Binding
 
 ```rust
-// ffi.rs -- Rust侧的 C ABI 绑定
+// ffi.rs -- Rust-side C ABI bindings
 use std::ffi::{c_char, CStr, CString};
 
 #[repr(C)]
 pub struct Engine {
-    _private: [u8; 0],  // 不透明类型
+    _private: [u8; 0],  // opaque type
 }
 
 extern "C" {
@@ -548,7 +548,7 @@ extern "C" {
     fn engine_free_string(s: *mut c_char);
 }
 
-// 安全封装
+// safe wrapper
 pub struct SafeEngine {
     raw: *mut Engine,
 }
@@ -591,7 +591,7 @@ impl Drop for SafeEngine {
 For tighter C++ integration, use the `cxx` crate:
 
 ```rust
-// 使用 cxx crate 直接在 Rust 中调用 C++ 函数
+// using cxx crate to call C++ functions directly from Rust
 #[cxx::bridge]
 mod ffi {
     unsafe extern "C++" {
@@ -617,20 +617,20 @@ fn use_engine() -> Result<(), cxx::Exception> {
 
 **Wrong:**
 ```rust
-// 不要: 试图用组合模拟 C++ 继承
+// WRONG: trying to emulate C++ inheritance with composition
 struct Base {
     x: i32,
 }
 struct Derived {
-    base: Base,  // "继承" Base
+    base: Base,  // "inherit" Base
     y: i32,
 }
-// 然后手动转发方法调用
+// then manually forward method calls
 ```
 
 **Right:**
 ```rust
-// 正确: 使用 trait 定义接口,没继承层次就用组合 + trait
+// CORRECT: use trait to define interface, composition + trait without hierarchy
 trait Entity { fn id(&self) -> u64; }
 
 struct Base { x: i32 }
@@ -639,7 +639,7 @@ impl Entity for Base { fn id(&self) -> u64 { self.x as u64 } }
 struct Derived { x: i32, y: i32 }
 impl Entity for Derived { fn id(&self) -> u64 { (self.x + self.y) as u64 } }
 
-// 需要扩展已有 struct?用 Deref 或直接组合:
+// need to extend existing struct? Use Deref or composition:
 struct Enhanced {
     base: Base,
     extra: String,
@@ -654,23 +654,23 @@ impl std::ops::Deref for Enhanced {
 
 **Wrong:**
 ```rust
-// 不要: 用 unsafe 绕过生命周期,模拟 C++ 的悬垂引用习惯
+// WRONG: using unsafe to bypass lifetimes, emulating C++ dangling reference habits
 struct Widget<'a> { data: &'a str }
 fn broken() -> Widget<'static> {
     let s = String::from("hello");
-    unsafe { std::mem::transmute(Widget { data: &s }) }  // s在函数结束时释放!
+    unsafe { std::mem::transmute(Widget { data: &s }) }  // s is freed when function ends!
 }
 ```
 
 **Right:**
 ```rust
-// 正确: 让生命周期正确表达关系,或使用 owned 类型
-struct Widget { data: String }  // 拥有数据,不借用
+// CORRECT: let lifetimes express relationships correctly, or use owned types
+struct Widget { data: String }  // owns data, no borrow
 fn correct() -> Widget {
     Widget { data: String::from("hello") }
 }
 
-// 或让调用方提供存储:
+// or let caller provide storage:
 fn correct_borrow<'a>(storage: &'a str) -> Widget<'a> {
     Widget { data: storage }
 }
@@ -680,42 +680,42 @@ fn correct_borrow<'a>(storage: &'a str) -> Widget<'a> {
 
 **Wrong:**
 ```rust
-// 不要: 将 reinterpret_cast 直译为 transmute
+// WRONG: translating reinterpret_cast directly to transmute
 let bytes: [u8; 4] = [0, 0, 128, 63];
 let float: f32 = unsafe { std::mem::transmute::<[u8; 4], f32>(bytes) };
-// transmute 要求大小完全一致,容易 UB
+// transmute requires exact size match, easy UB
 ```
 
 **Right:**
 ```rust
-// 正确: 使用 bytemuck crate 做安全的位级转换
+// CORRECT: use bytemuck crate for safe bit-level conversion
 use bytemuck;
 let bytes: [u8; 4] = [0, 0, 128, 63];
 let float: f32 = bytemuck::cast(bytes);
-// bytemuck 在编译期验证大小和对齐
+// bytemuck verifies size and alignment at compile time
 
-// 或使用标准库的安全方法:
-let float = f32::from_ne_bytes(bytes);  // 标准库原生支持
+// or use standard library safe methods:
+let float = f32::from_ne_bytes(bytes);  // stdlib native support
 ```
 
 ### Mistake 4: Using `Box<dyn Any>` for Everything That Was `std::any`
 
 **Wrong:**
 ```rust
-// 不要: 所有类型擦除都用 dyn Any
+// WRONG: using dyn Any for all type erasure
 fn process(items: Vec<Box<dyn Any>>) {
     for item in items {
         if let Some(s) = item.downcast_ref::<String>() {
             println!("{s}");
         }
-        // 每个类型都要写一次 downcast,不可扩展
+        // every type needs a downcast, not extensible
     }
 }
 ```
 
 **Right:**
 ```rust
-// 正确: 用 enum 做封闭集合的静态分发
+// CORRECT: use enum for static dispatch over closed sets
 enum Item { Text(String), Number(i32), Flag(bool) }
 
 fn process(items: Vec<Item>) {
@@ -725,11 +725,11 @@ fn process(items: Vec<Item>) {
             Item::Number(n) => println!("{n}"),
             Item::Flag(f) => println!("{f}"),
         }
-        // 编译器保证所有分支都被处理
+        // compiler guarantees all arms are handled
     }
 }
 
-// 需要开放集合时才用 trait object:
+// use trait object only when open sets are needed:
 trait Processable { fn process(&self); }
 fn process(items: Vec<Box<dyn Processable>>) {
     for item in items { item.process(); }
@@ -740,7 +740,7 @@ fn process(items: Vec<Box<dyn Processable>>) {
 
 **Wrong:**
 ```rust
-// 不要: 在 const 方法中修改状态用 RefCell 包装所有字段
+// WRONG: wrapping all fields in RefCell for mutation in const methods
 struct Cache {
     data: RefCell<HashMap<String, String>>,
     hits: RefCell<u64>,
@@ -749,8 +749,8 @@ struct Cache {
 
 **Right:**
 ```rust
-// 正确: 区分逻辑可变和物理可变
-// 方案 A: 设计时让需要修改的方法接收 &mut self
+// CORRECT: distinguish logical mutability from physical mutability
+// Option A: design methods needing mutation to take &mut self
 struct Cache {
     data: HashMap<String, String>,
     hits: u64,
@@ -763,10 +763,10 @@ impl Cache {
     }
 }
 
-// 方案 B: 如果确实需要共享可变(如多线程缓存),用 Arc + 合适的并发原语
+// Option B: if shared mutation is truly needed (e.g. multi-threaded cache), use Arc + proper concurrency primitives
 use std::sync::Arc;
 struct Cache {
-    data: dashmap::DashMap<String, String>,  // 并发 HashMap
+    data: dashmap::DashMap<String, String>,  // concurrent HashMap
     hits: std::sync::atomic::AtomicU64,
 }
 

@@ -67,33 +67,17 @@ use std::fs::File;
 
 // Rust:
 fn process_csv(path: &str) -> PolarsResult<DataFrame> {
-    let mut df = CsvReadOptions::default()
+    let df = CsvReadOptions::default()
         .try_into_reader_with_file_path(Some(path.into()))?
         .finish()?;
 
-    // 添加新列
-    let a: &Column = df.column("a")?;
-    let b: &Column = df.column("b")?;
-    let new_col: Column = (a.as_materialized_series()
-        .f64()?
-        .into_iter()
-        .zip(b.as_materialized_series().f64()?.into_iter())
-        .map(|(a, b)| match (a, b) {
-            (Some(a), Some(b)) => Some(a + b),
-            _ => None,
-        })
-        .collect::<Float64Chunked>()
-        .into_column());
-    df.with_column(new_col.with_name("new_col".into()))?;
+    // add new column using lazy API (preferred)
+    let result = df.lazy()
+        .with_column((col("a") + col("b")).alias("new_col"))
+        .filter(col("value").gt(10.0))
+        .collect()?;
 
-    // 过滤行
-    let mask = df.column("value")?
-        .as_materialized_series()
-        .f64()?
-        .gt(10.0)?;
-    let filtered = df.filter(&mask)?;
-
-    Ok(filtered)
+    Ok(result)
 }
 ```
 
@@ -116,21 +100,21 @@ R uses a garbage collector with copy-on-write semantics. Rust uses ownership wit
 ### Copy-on-Write Awareness
 
 ```rust
-// R — COW 自动发生:
+// R — COW is automatic:
 // x <- 1:5
-// y <- x        # 不复制（引用）
-// y[1] <- 99    # 现在复制，修改 y
+// y <- x        # no copy (reference)
+// y[1] <- 99    # now copies, mutates y
 
-// Rust — 用户显式控制:
+// Rust — user controls explicitly:
 let x = vec![1, 2, 3, 4, 5];
-let y = &x;              // 借用，不复制
-// y[0] = 99;            // 编译错误: 不可变借用
-let mut y = x.clone();   // 显式复制
+let y = &x;              // borrow, no copy
+// y[0] = 99;            // compile error: immutable borrow
+let mut y = x.clone();   // explicit copy
 y[0] = 99;               // OK
-// 或使用 Cow:
+// or use Cow:
 use std::borrow::Cow;
 let mut z = Cow::Borrowed(&x);
-z.to_mut()[0] = 99;      // 仅在需要修改时复制
+z.to_mut()[0] = 99;      // copies only when mutation needed
 ```
 
 ## Concurrency / Async Translation
@@ -159,19 +143,19 @@ use ndarray::Array1;
 // R:
 // result <- sapply(1:1000000, function(x) sqrt(x) * log(x + 1))
 
-// Rust — 顺序:
+// Rust — sequential:
 fn compute_sequential(n: usize) -> Vec<f64> {
     (1..=n).map(|x| (x as f64).sqrt() * (x as f64 + 1.0).ln()).collect()
 }
 
-// Rust — 并行（适合 CPU 密集型）:
+// Rust — parallel (for CPU-bound work):
 fn compute_parallel(n: usize) -> Vec<f64> {
     (1..=n).into_par_iter()
         .map(|x| (x as f64).sqrt() * (x as f64 + 1.0).ln())
         .collect()
 }
 
-// 使用 ndarray 向量化（SIMD）:
+// Rust — ndarray vectorized (SIMD):
 fn compute_ndarray(n: usize) -> Array1<f64> {
     let x = Array1::linspace(1.0, n as f64, n);
     x.mapv(|v| v.sqrt() * (v + 1.0).ln())
@@ -360,21 +344,21 @@ fn dplyr_pipeline(df: &DataFrame) -> PolarsResult<DataFrame> {
 // R:
 // z_score <- function(x) { (x - mean(x, na.rm = TRUE)) / sd(x, na.rm = TRUE) }
 
-// Rust — 单值:
+// Rust — scalar:
 fn z_score_single(x: f64, mean: f64, sd: f64) -> f64 {
     (x - mean) / sd
 }
 
-// Rust — 向量化（使用 ndarray）:
+// Rust — vectorized (using ndarray):
 use ndarray::Array1;
 use ndarray_stats::QuantileExt;
 
 fn z_score(x: &Array1<f64>) -> Array1<f64> {
-    // 忽略 NaN 计算均值和标准差
+    // compute mean and std ignoring NaN
     let valid: Vec<f64> = x.iter().filter(|v| !v.is_nan()).copied().collect();
     let valid_arr = Array1::from_vec(valid);
     let mean = valid_arr.mean().unwrap_or(0.0);
-    let sd = valid_arr.std(0.0);  // ddof = 0, 总体标准差
+    let sd = valid_arr.std(0.0);  // ddof = 0, population std
     if sd == 0.0 {
         return x.mapv(|_| 0.0);
     }
@@ -388,7 +372,7 @@ fn z_score(x: &Array1<f64>) -> Array1<f64> {
 // R:
 // result <- tapply(df$value, df$group, mean)
 
-// Rust — 使用 Iterator + HashMap:
+// Rust — using Iterator + HashMap:
 use std::collections::HashMap;
 
 fn tapply_mean(values: &[f64], groups: &[&str]) -> HashMap<String, f64> {
@@ -403,7 +387,7 @@ fn tapply_mean(values: &[f64], groups: &[&str]) -> HashMap<String, f64> {
         .collect()
 }
 
-// 推荐：使用 polars:
+// recommended: use polars:
 // df.group_by(&["group"]).agg(&[col("value").mean()])
 ```
 
@@ -438,7 +422,7 @@ impl Predict for LogisticModel {
     }
 }
 
-// 统一调用:
+// unified call:
 fn compute_predictions<M: Predict>(models: &[M], data: &Array2<f64>) -> Vec<Vec<f64>> {
     models.iter().map(|m| m.predict(data)).collect()
 }
@@ -471,10 +455,10 @@ fn lm_formula() -> Result<(), Box<dyn std::error::Error>> {
 
 ```rust
 // R:
-// apply(mat, 1, sum)    # 行求和
-// apply(mat, 2, mean)   # 列均值
-// lapply(list, summary) # 列表映射
-// sapply(vec, sqrt)     # 向量化
+// apply(mat, 1, sum)    # row sums
+// apply(mat, 2, mean)   # column means
+// lapply(list, summary) # list mapping
+// sapply(vec, sqrt)     # vectorized
 
 // Rust:
 use ndarray::Array2;
@@ -482,21 +466,21 @@ use ndarray::Array2;
 fn apply_patterns() {
     let mat = Array2::from_shape_vec((3, 4), (1..=12).map(|v| v as f64).collect()).unwrap();
 
-    // 行操作 (axis=0) — R apply(mat, 1, sum):
+    // row operation (axis=0) — R apply(mat, 1, sum):
     let row_sums: Vec<f64> = mat.axis_iter(ndarray::Axis(0))
         .map(|row| row.sum())
         .collect();
 
-    // 列操作 (axis=1) — R apply(mat, 2, mean):
+    // column operation (axis=1) — R apply(mat, 2, mean):
     let col_means: Vec<f64> = mat.axis_iter(ndarray::Axis(1))
         .map(|col| col.mean().unwrap_or(0.0))
         .collect();
 
-    // lapply 风格:
+    // lapply style:
     let items = vec![1.0, 2.0, 3.0, 4.0];
     let squared: Vec<f64> = items.iter().map(|x| x * x).collect();
 
-    // 并行版本 — mclapply:
+    // parallel version — mclapply:
     use rayon::prelude::*;
     let squared_par: Vec<f64> = items.par_iter().map(|x| x * x).collect();
 }
@@ -518,11 +502,11 @@ R and Rust can interoperate via the `extendr` crate, allowing incremental migrat
 ### extendr Example: Rust Function Callable from R
 
 ```rust
-// Rust — 定义为 R 可调用的函数:
+// Rust — define function callable from R:
 use extendr_api::prelude::*;
 
-/// 计算向量化 z-score（替代 R 的 scale()）
-/// @param x 数值向量
+/// Compute vectorized z-score (replaces R scale())
+/// @param x numeric vector
 /// @export
 #[extendr]
 fn fast_zscore(x: &[f64]) -> Vec<f64> {
@@ -535,13 +519,13 @@ fn fast_zscore(x: &[f64]) -> Vec<f64> {
     x.iter().map(|v| (v - mean) / sd).collect()
 }
 
-// 注册函数供 R 调用:
+// register function for R to call:
 #[extendr]
 fn hello_from_rust() -> &'static str {
     "Hello from Rust!"
 }
 
-// 模块入口:
+// module entry:
 extendr_module! {
     mod myrustpkg;
     fn fast_zscore;
@@ -570,13 +554,13 @@ result <- fast_zscore(c(1, 2, 3, 4, 5))
 ### Mistake 1: Forgetting NA Handling
 
 ```rust
-// 错误 — 忽略 NA 值导致静默错误:
+// WRONG — ignoring NA leads to silent errors:
 fn mean_naive(values: &[f64]) -> f64 {
     values.iter().sum::<f64>() / values.len() as f64
-    // 如果 values 包含 NaN，结果也是 NaN — 但 R 的 mean(na.rm=T) 会跳过
+    // if values contains NaN, result is NaN — but R mean(na.rm=T) would skip
 }
 
-// 正确 — 处理缺失值:
+// CORRECT — handle missing values:
 fn mean_robust(values: &[Option<f64>]) -> Option<f64> {
     let (sum, count) = values.iter()
         .filter_map(|&v| v)
@@ -588,31 +572,31 @@ fn mean_robust(values: &[Option<f64>]) -> Option<f64> {
 ### Mistake 2: Using Vec<Vec<f64>> Instead of ndarray for Matrices
 
 ```rust
-// 错误 — 双层 Vec 效率极低（指针追逐，缓存不友好）:
+// WRONG — nested Vec extremely inefficient (pointer chasing, cache-unfriendly):
 let matrix: Vec<Vec<f64>> = vec![vec![1.0; 1000]; 1000];
 let sum: f64 = matrix.iter().flatten().sum();
 
-// 正确 — 列优先连续内存:
+// CORRECT — column-major contiguous memory:
 let matrix = Array2::<f64>::from_elem((1000, 1000), 1.0);
 let sum: f64 = matrix.sum();
-// ndarray 自动 SIMD 向量化，且内存连续
+// ndarray auto-SIMD vectorization, contiguous memory
 ```
 
 ### Mistake 3: 1-Indexing in Algorithm Ports
 
 ```rust
-// 错误 — R 代码中的 1:5 直接翻译:
+// WRONG — direct translation of R 1:5:
 // R: for (i in 1:n) { x[i] <- x[i] * 2 }
-// Rust 错误翻译:
-for i in 1..=n {  // 越界！Rust 数组从 0 开始
+// WRONG Rust translation:
+for i in 1..=n {  // out of bounds! Rust arrays start at 0
     x[i] *= 2.0;
 }
 
-// 正确:
+// CORRECT:
 for i in 0..n {
     x[i] *= 2.0;
 }
-// 或使用迭代器（更符合 Rust 习惯）:
+// or use iterator (more idiomatic Rust):
 for val in x.iter_mut() {
     *val *= 2.0;
 }
@@ -621,10 +605,10 @@ for val in x.iter_mut() {
 ### Mistake 4: Implicit Recycling in Vector Operations
 
 ```rust
-// R 自动长度回收:
+// R auto-recycles lengths:
 // c(1, 2, 3, 4) + c(1, 2)  =>  c(2, 4, 4, 6)
 
-// Rust — 必须显式处理或报错:
+// Rust — must handle explicitly or error:
 fn add_with_recycle(a: &[f64], b: &[f64]) -> Result<Vec<f64>, &'static str> {
     if a.len() % b.len() != 0 {
         return Err("长度不是倍数关系，无法回收");
@@ -639,17 +623,17 @@ fn add_with_recycle(a: &[f64], b: &[f64]) -> Result<Vec<f64>, &'static str> {
 ### Mistake 5: Using Mutable Global State Like R's .GlobalEnv
 
 ```rust
-// 错误 — R 风格的全局变量:
+// WRONG — R-style global variable:
 static mut DATA: Vec<DataFrame> = Vec::new();
 
-// 正确 — 参数化传递:
+// CORRECT — parameterized passing:
 struct AnalysisContext {
     data: Vec<DataFrame>,
     parameters: Config,
 }
 
 fn run_pipeline(ctx: &AnalysisContext) -> Result<Report, Error> {
-    // 所有数据通过 ctx 传入
+    // all data passed via ctx
     // ...
 }
 ```

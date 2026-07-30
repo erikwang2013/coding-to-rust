@@ -60,9 +60,9 @@ Vue uses JavaScript/TypeScript types. Rust WASM code communicates with JavaScrip
 // Leptos:
 #[component]
 fn MyComponent(
-    #[prop(into)] title: String,              // String 可从 &str 转换
-    #[prop(optional)] count: Option<i32>,      // 可选 prop，默认 None
-    #[prop(default = 0)] count_default: i32,   // 带默认值的可选 prop
+    #[prop(into)] title: String,              // String convertible from &str
+    #[prop(optional)] count: Option<i32>,      // optional prop, defaults to None
+    #[prop(default = 0)] count_default: i32,   // optional prop with default
 ) -> impl IntoView {
     view! { <div>{title} — count: {count_default}</div> }
 }
@@ -96,7 +96,7 @@ Vue's reactivity system automatically tracks dependencies and cleans up. Rust WA
 //   return { count, double, increment };
 // });
 
-// Rust Leptos — 文件: src/stores/counter.rs
+// Rust Leptos — file: src/stores/counter.rs
 use leptos::prelude::*;
 
 #[derive(Clone)]
@@ -117,7 +117,7 @@ impl CounterStore {
     }
 }
 
-// 在组件中使用:
+// usage in component:
 // let store = CounterStore::new();
 // provide_context(store.clone());
 ```
@@ -270,13 +270,13 @@ fn Conditional() -> impl IntoView {
     let (is_visible, set_visible) = signal(true);
 
     view! {
-        // v-if 等价 — 从 DOM 中添加/移除
+        // v-if equivalent — add/remove from DOM
         <Show when=move || is_visible.get()
             fallback=|| view! { <p>"Hidden with v-if"</p> }
         >
             <p>"Shown"</p>
         </Show>
-        // v-show 等价 — CSS display 切换
+        // v-show equivalent — toggle CSS display
         <p style:display=move || if is_visible.get() { "block" } else { "none" }>
             "Shown with v-show style"
         </p>
@@ -307,12 +307,12 @@ fn ItemList(items: Vec<ListItem>) -> impl IntoView {
     }
 }
 
-// 动态列表（响应式）:
+// dynamic list (reactive):
 #[component]
 fn DynamicList() -> impl IntoView {
     let (items, set_items) = signal::<Vec<ListItem>>(vec![]);
 
-    // Leptos 0.7 使用 For 组件进行高效的 keyed diff:
+    // Leptos 0.7 uses For component for efficient keyed diff:
     view! {
         <For
             each=move || items.get()
@@ -329,7 +329,7 @@ fn DynamicList() -> impl IntoView {
 // Vue:
 // <input v-model="username" />
 
-// Rust Leptos — 受控输入:
+// Rust Leptos — controlled input:
 use leptos::{prelude::*, html::Input};
 
 #[component]
@@ -355,7 +355,7 @@ fn TextInput() -> impl IntoView {
 // const emit = defineEmits<{ 'update:modelValue': [value: string] }>();
 // emit('update:modelValue', newValue);
 //
-// 父组件: <Child @update:model-value="handleUpdate" />
+// parent: <Child @update:model-value="handleUpdate" />
 
 // Rust Leptos:
 #[component]
@@ -391,16 +391,16 @@ use leptos::prelude::*;
 
 #[component]
 fn Lifecycled() -> impl IntoView {
-    // onMounted — 在 DOM 挂载后运行
+    // onMounted — runs after DOM mount
     on_mount(move || {
         // init();
     });
 
-    // onUnmounted — 在组件移除时清理
+    // onUnmounted — cleanup when component is removed
     on_cleanup(|| {
         // cleanup();
     });
-    // 或通过 Drop trait 自动清理资源
+    // or auto-cleanup resources via Drop trait
 
     view! { <div>"Component"</div> }
 }
@@ -441,7 +441,7 @@ fn Animated() -> impl IntoView {
 // .title { color: red; }
 // </style>
 
-// Rust Leptos — 使用 stylist-rs:
+// Rust Leptos — using stylist-rs:
 use stylist::yew::styled_component;
 use yew::prelude::*;
 
@@ -456,7 +456,7 @@ fn MyComponent() -> Html {
     }
 }
 
-// 或 Leptos 中使用 wasm-bindgen 导入外部 CSS module
+// or import external CSS module via wasm-bindgen in Leptos
 ```
 
 ## FFI & Incremental Migration
@@ -474,7 +474,7 @@ When migrating a Vue app, you can run Vue and Rust WASM side by side in the same
 ### Calling Rust WASM from Vue
 
 ```rust
-// Rust — 编译为 WASM 模块，暴露给 JS:
+// Rust — compile as WASM module, expose to JS:
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -523,19 +523,19 @@ function add(n: number) {
 ### Mistake 1: Blocking the Main Thread with Heavy Computation
 
 ```rust
-// 错误 — 阻塞浏览器 UI 线程:
+// WRONG — blocking browser UI thread:
 fn heavy_processing(input: &[u8]) -> Vec<u8> {
-    // 耗时 500ms 的处理 — 页面在此期间无响应
+    // 500ms processing — page is unresponsive during this time
     input.iter().map(|b| b.wrapping_mul(3)).collect()
 }
 
-// 正确 — 使用 setTimeout 或 requestAnimationFrame 分段处理:
+// CORRECT — use setTimeout or requestAnimationFrame for chunked processing:
 async fn heavy_processing_non_blocking(input: Vec<u8>) -> Vec<u8> {
     let chunk_size = 1000;
     let mut result = Vec::with_capacity(input.len());
     for chunk in input.chunks(chunk_size) {
         result.extend(chunk.iter().map(|b| b.wrapping_mul(3)));
-        // 每个 chunk 后让出控制权给浏览器
+        // yield control to browser after each chunk
         gloo_timers::future::TimeoutFuture::new(0).await;
     }
     result
@@ -545,11 +545,11 @@ async fn heavy_processing_non_blocking(input: Vec<u8>) -> Vec<u8> {
 ### Mistake 2: Passing Large Objects Across WASM Boundary Frequently
 
 ```rust
-// 错误 — 每次渲染都跨边界传递大数据:
+// WRONG — passing large data across boundary on every render:
 #[wasm_bindgen]
 pub fn render_table(data: Vec<Row>) -> Vec<u8> { /* ... */ }
 
-// 正确 — 在 Rust 端维护数据，只传递变更:
+// CORRECT — maintain data on Rust side, only pass changes:
 #[wasm_bindgen]
 pub struct TableEngine { rows: Vec<Row>, render_cache: Vec<u8> }
 
@@ -557,7 +557,7 @@ pub struct TableEngine { rows: Vec<Row>, render_cache: Vec<u8> }
 impl TableEngine {
     pub fn update_row(&mut self, idx: usize, row: Row) {
         self.rows[idx] = row;
-        // 只重渲染变更的行
+        // only re-render changed rows
     }
 }
 ```
@@ -565,33 +565,33 @@ impl TableEngine {
 ### Mistake 3: Cloning Large Structures in Signal Updates
 
 ```rust
-// 错误 — 每次信号更新都克隆整个 Vec:
+// WRONG — cloning entire Vec on every signal update:
 let (items, set_items) = signal(vec![1i32; 10000]);
 
-// 事件处理中:
+// in event handler:
 set_items.update(|v| {
-    let mut new_vec = v.clone();  // 不必要的克隆
+    let mut new_vec = v.clone();  // unnecessary clone
     new_vec.push(42);
     new_vec
 });
 
-// 正确 — 在原位更新:
-set_items.update(|v| v.push(42));  // Vec::push 直接修改
-// 或使用 StoredValue 存储大结构并用内部可变性
+// CORRECT — update in place:
+set_items.update(|v| v.push(42));  // Vec::push modifies directly
+// or use StoredValue for large structs with interior mutability
 ```
 
 ### Mistake 4: Forgetting to Register the Panic Hook
 
 ```rust
-// 错误 — WASM 中 panic 输出不可读:
+// WRONG — unreadable panic output in WASM:
 fn main() {
-    mount_to_body(|| view! { <App /> }); // panic 时只有 "unreachable"
+    mount_to_body(|| view! { <App /> }); // only "unreachable" on panic
 }
 
-// 正确 — 在主函数开头注册 hook:
+// CORRECT — register hooks at the start of main:
 fn main() {
-    console_error_panic_hook::set_once();   // 友好的 panic 消息
-    tracing_wasm::set_as_global_default();  // tracing 输出到 console
+    console_error_panic_hook::set_once();   // readable panic messages
+    tracing_wasm::set_as_global_default();  // tracing output to console
     mount_to_body(|| view! { <App /> });
 }
 ```
@@ -599,10 +599,10 @@ fn main() {
 ### Mistake 5: Using std::time::Instant::now() in WASM
 
 ```rust
-// 错误:
-let start = std::time::Instant::now(); // WASM 中时钟精度很低
+// WRONG:
+let start = std::time::Instant::now(); // very low clock precision in WASM
 
-// 正确 — 使用浏览器 Performance API:
+// CORRECT — use browser Performance API:
 fn now_ms() -> f64 {
     web_sys::window()
         .and_then(|w| w.performance())

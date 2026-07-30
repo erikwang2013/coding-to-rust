@@ -89,44 +89,44 @@ C# splits types into reference types (heap-allocated, garbage collected) and val
 ### Reference Types -> Ownership
 
 ```csharp
-// C#: class 是引用类型，默认在堆上分配
+// C#: class is a reference type, heap-allocated by default
 public class Order
 {
-    public string Id { get; set; }          // string 是引用类型
-    public List<LineItem> Items { get; set; } // List 是引用类型
-    public decimal Total { get; set; }      // decimal 是值类型
+    public string Id { get; set; }          // string is reference type
+    public List<LineItem> Items { get; set; } // List is reference type
+    public decimal Total { get; set; }      // decimal is value type
 }
 
-// var order = new Order(); // 堆分配
-// 变量 order 是指向堆对象的引用
+// var order = new Order(); // heap allocation
+// variable order is a reference to heap object
 ```
 
 ```rust
-// Rust: struct 默认栈分配；堆数据通过 String/Vec 间接引用
+// Rust: struct defaults to stack; heap data via String/Vec indirectly
 pub struct Order {
-    pub id: String,            // String 的数据在堆上，结构体字段在栈上
-    pub items: Vec<LineItem>,  // Vec 的数据在堆上
+    pub id: String,            // String data on heap, struct field on stack
+    pub items: Vec<LineItem>,  // Vec data on heap
     pub total: rust_decimal::Decimal,
 }
 
-// let order = Order { ... }; // 栈分配
-// 如需堆分配：let order = Box::new(Order { ... });
+// let order = Order { ... }; // stack allocation
+// for heap allocation: let order = Box::new(Order { ... });
 ```
 
 ### Nullable Reference Types -> Option
 
 ```csharp
-// C# 8+: 可空引用类型
+// C# 8+: nullable reference types
 #nullable enable
 
 public class User
 {
-    public string Name { get; set; }       // 不可空
-    public string? MiddleName { get; set; } // 可空
-    public Address? Address { get; set; }  // 可为 null
+    public string Name { get; set; }       // non-nullable
+    public string? MiddleName { get; set; } // nullable
+    public Address? Address { get; set; }  // may be null
 }
 
-// 使用时需检查 null
+// must check null when using
 if (user.Address is not null)
 {
     Console.WriteLine(user.Address.City);
@@ -134,14 +134,14 @@ if (user.Address is not null)
 ```
 
 ```rust
-// Rust: 所有引用类型都是不可空的，用 Option<T> 替代可空语义
+// Rust: all reference types are non-nullable; use Option<T> for nullable semantics
 pub struct User {
-    pub name: String,                  // 始终有效
-    pub middle_name: Option<String>,   // 可能不存在
-    pub address: Option<Address>,      // 可能不存在
+    pub name: String,                  // always valid
+    pub middle_name: Option<String>,   // may not exist
+    pub address: Option<Address>,      // may not exist
 }
 
-// 模式匹配确保安全访问
+// pattern matching ensures safe access
 if let Some(ref addr) = user.address {
     println!("{}", addr.city);
 }
@@ -150,7 +150,7 @@ if let Some(ref addr) = user.address {
 ### IDisposable -> Drop
 
 ```csharp
-// C#: IDisposable + using 语句
+// C#: IDisposable + using statement
 public class DatabaseConnection : IDisposable
 {
     private SqlConnection _conn;
@@ -162,21 +162,21 @@ public class DatabaseConnection : IDisposable
     }
 }
 
-// 自动调用 Dispose
+// Dispose called automatically
 using var db = new DatabaseConnection();
 db.Query("SELECT ...");
-// Dispose 在此调用
+// Dispose called here
 ```
 
 ```rust
-// Rust: Drop trait —— 确定性析构
+// Rust: Drop trait — deterministic destruction
 pub struct DatabaseConnection {
     conn: sqlx::PgConnection,
 }
 
 impl Drop for DatabaseConnection {
     fn drop(&mut self) {
-        // conn 在离开作用域时自动关闭
+        // conn auto-closes when leaving scope
         tracing::info!("connection closed");
     }
 }
@@ -184,7 +184,7 @@ impl Drop for DatabaseConnection {
 {
     let db = DatabaseConnection::new();
     db.query("SELECT ...");
-} // Drop::drop 在此自动调用
+} // Drop::drop called automatically here
 ```
 
 ## Concurrency / Async Translation
@@ -205,7 +205,7 @@ public async Task<Order> GetOrderAsync(int orderId)
     return order;
 }
 
-// 并发执行多个任务
+// execute multiple tasks concurrently
 var (user, orders) = await (
     GetUserAsync(id),
     GetOrdersAsync(id)
@@ -213,7 +213,7 @@ var (user, orders) = await (
 ```
 
 ```rust
-// Rust: async/await —— 语法几乎相同
+// Rust: async/await — nearly identical syntax
 async fn get_order(pool: &PgPool, order_id: i32) -> Result<Order, sqlx::Error> {
     let order = sqlx::query_as::<_, Order>("SELECT * FROM orders WHERE id = $1")
         .bind(order_id)
@@ -228,7 +228,7 @@ async fn get_order(pool: &PgPool, order_id: i32) -> Result<Order, sqlx::Error> {
     Ok(Order { items, ..order })
 }
 
-// 并发执行 —— tokio::join! 同样支持 tuple 模式
+// concurrent execution — tokio::join! also supports tuple pattern
 let (user, orders) = tokio::join!(
     get_user(&pool, id),
     get_orders(&pool, id),
@@ -254,23 +254,23 @@ let (user, orders) = tokio::join!(
 ### Thread vs. Async Task
 
 ```csharp
-// C#: Task.Run 将工作放入线程池
+// C#: Task.Run puts work on thread pool
 var result = await Task.Run(() => HeavyComputation(data));
 
-// C#: 后台线程
+// C#: background thread
 var thread = new Thread(() => { ... });
 thread.Start();
 ```
 
 ```rust
-// Rust: 对于 CPU 密集工作，用 spawn_blocking 避免阻塞异步运行时
+// Rust: for CPU-bound work, use spawn_blocking to avoid blocking async runtime
 let result = tokio::task::spawn_blocking(move || {
     heavy_computation(data)
 }).await?;
 
-// Rust: 专用 OS 线程
+// Rust: dedicated OS thread
 std::thread::spawn(move || {
-    // 长期运行的后台工作
+    // long-running background work
 });
 ```
 
@@ -372,7 +372,7 @@ dotenvy = "0.15"
 ### 1. LINQ -> Iterator Combinators
 
 ```csharp
-// C#: LINQ —— 声明式集合转换
+// C#: LINQ — declarative collection transformation
 var vipEmails = users
     .Where(u => u.IsVip)
     .OrderByDescending(u => u.TotalSpent)
@@ -382,7 +382,7 @@ var vipEmails = users
 ```
 
 ```rust
-// Rust: Iterator —— 零成本组合器，惰性求值
+// Rust: Iterator — zero-cost combinators, lazy evaluation
 use itertools::Itertools;
 
 let vip_emails: Vec<_> = users
@@ -397,7 +397,7 @@ let vip_emails: Vec<_> = users
 ### 2. Event / Delegate -> Channel / Callback
 
 ```csharp
-// C#: event —— 发布/订阅模式
+// C#: event — publish/subscribe pattern
 public class OrderProcessor
 {
     public event EventHandler<OrderEventArgs>? OrderCompleted;
@@ -408,14 +408,14 @@ public class OrderProcessor
     }
 }
 
-// 订阅
+// subscribe
 processor.OrderCompleted += (sender, args) => {
     Console.WriteLine($"Order {args.Order.Id} completed");
 };
 ```
 
 ```rust
-// Rust: tokio broadcast channel —— 发布/订阅
+// Rust: tokio broadcast channel — publish/subscribe
 use tokio::sync::broadcast;
 
 pub struct OrderProcessor {
@@ -433,8 +433,8 @@ impl OrderProcessor {
     }
 }
 
-// 订阅
-let mut rx2 = processor.tx.subscribe(); // 每个订阅者独立
+// subscribe
+let mut rx2 = processor.tx.subscribe(); // each subscriber is independent
 tokio::spawn(async move {
     while let Ok(event) = rx2.recv().await {
         match event {
@@ -447,7 +447,7 @@ tokio::spawn(async move {
 ### 3. Extension Method -> Trait Extension
 
 ```csharp
-// C#: extension method —— 类型扩展
+// C#: extension method — type extension
 public static class StringExtensions
 {
     public static bool IsValidEmail(this string str)
@@ -456,7 +456,7 @@ public static class StringExtensions
     }
 }
 
-// 使用
+// usage
 if (email.IsValidEmail()) { ... }
 ```
 
@@ -472,14 +472,14 @@ impl StringExt for str {
     }
 }
 
-// 使用
+// usage
 if email.is_valid_email() { ... }
 ```
 
 ### 4. Dependency Injection -> Manual/Constructor Injection
 
 ```csharp
-// C#: ASP.NET Core DI 容器
+// C#: ASP.NET Core DI container
 public class OrderService
 {
     private readonly IOrderRepository _repo;
@@ -499,7 +499,7 @@ public class OrderService
 ```
 
 ```rust
-// Rust: 构造函数注入 —— 无 DI 容器
+// Rust: constructor injection — no DI container
 pub struct OrderService<R: OrderRepo, P: Payment> {
     repo: R,
     payment: P,
@@ -519,7 +519,7 @@ impl<R: OrderRepo, P: Payment> OrderService<R, P> {
     }
 }
 
-// 启动时组装
+// wire up at startup
 let service = OrderService::new(pg_repo, stripe_gateway);
 let app_state = Arc::new(AppState { order_service: service });
 ```
@@ -527,7 +527,7 @@ let app_state = Arc::new(AppState { order_service: service });
 ### 5. Async Stream (IAsyncEnumerable) -> Stream
 
 ```csharp
-// C# 8+: IAsyncEnumerable —— 异步流
+// C# 8+: IAsyncEnumerable — async stream
 public async IAsyncEnumerable<Order> GetPendingOrdersAsync()
 {
     await foreach (var batch in _db.Orders
@@ -547,7 +547,7 @@ use futures::stream::Stream;
 fn get_pending_orders(
     pool: &PgPool,
 ) -> impl Stream<Item = Result<Order, sqlx::Error>> + '_ {
-    // 分批查询或使用游标
+    // batch query or use cursor
     async_stream::stream! {
         let mut offset = 0i64;
         loop {
@@ -579,7 +579,7 @@ For .NET monoliths, extract services at the HTTP/gRPC boundary and rebuild in Ru
 ### P/Invoke: Rust Library Called from C#
 
 ```rust
-// Rust 侧: cdylib 导出
+// Rust side: cdylib export
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
@@ -606,7 +606,7 @@ pub extern "C" fn free_rust_string(ptr: *mut c_char) {
 ```
 
 ```csharp
-// C# 侧: P/Invoke 调用 Rust library
+// C# side: P/Invoke calling Rust library
 public static class RustValidator
 {
     private const string RustLib = "rust_validator";
@@ -643,8 +643,8 @@ public static class RustValidator
 ### Mistake 1: Trying to Port Class Hierarchies
 
 ```rust
-// 错误：C# 开发者尝试用 trait 对象模拟深层继承链
-// 深层继承树在 Rust 中是反模式
+// WRONG: C# devs trying to emulate deep inheritance chains with trait objects
+// deep inheritance trees are anti-patterns in Rust
 trait Animal { fn speak(&self); }
 trait Mammal: Animal { fn feed_milk(&self); }
 trait Canine: Mammal { fn bark(&self); }
@@ -653,7 +653,7 @@ impl Animal for Dog { ... }
 impl Mammal for Dog { ... }
 impl Canine for Dog { ... }
 
-// 正确：使用 enum 表示封闭类型集合，组合表示共享行为
+// CORRECT: use enum for closed type sets, composition for shared behavior
 enum Animal {
     Dog(DogConfig),
     Cat(CatConfig),
@@ -674,26 +674,26 @@ impl Animal {
 ### Mistake 2: Mutable Reference Confusion
 
 ```rust
-// 错误：C# 中所有引用默认可变；Rust 中 &T 不可变
+// WRONG: C# references are mutable by default; &T is immutable in Rust
 fn update_order(order: &Order, new_status: Status) {
-    order.status = new_status; // 编译错误：&Order 不可变
+    order.status = new_status; // compile error: &Order is immutable
 }
 
-// 正确：需要 &mut 才能修改
+// CORRECT: need &mut to modify
 fn update_order(order: &mut Order, new_status: Status) {
     order.status = new_status;
 }
 
-// 编译期禁止别名可变：同一时间只能有一个 &mut 或任意多个 &
+// compile-time alias prohibition: only one &mut or many & at a time
 let mut order = Order::new();
 let r1 = &mut order;
-let r2 = &mut order; // 编译错误：不能同时有两个可变借用
+let r2 = &mut order; // compile error: cannot have two mutable borrows
 ```
 
 ### Mistake 3: Expecting Runtime Reflection
 
 ```csharp
-// C#: 运行时反射 —— 轻松但代价高
+// C#: runtime reflection — easy but costly
 var type = obj.GetType();
 foreach (var prop in type.GetProperties())
 {
@@ -702,7 +702,7 @@ foreach (var prop in type.GetProperties())
 ```
 
 ```rust
-// Rust: 无运行时反射 —— 使用 serde + derive 宏进行序列化
+// Rust: no runtime reflection — use serde + derive macros for serialization
 #[derive(Serialize)]
 struct Order {
     id: String,
@@ -712,7 +712,7 @@ struct Order {
 let json = serde_json::to_string(&order)?;
 println!("{json}");
 
-// 或用 trait + 手动实现替代反射
+// or use trait + manual impl instead of reflection
 trait Inspect {
     fn fields(&self) -> Vec<(&str, String)>;
 }
@@ -729,17 +729,17 @@ impl Inspect for Order {
 ### Mistake 4: `async void` / Fire-and-Forget
 
 ```csharp
-// C#: fire-and-forget —— 可能吞没异常
+// C#: fire-and-forget — may swallow exceptions
 async void SendNotificationAsync(string message)
 {
-    await _emailService.SendAsync(message); // 异常丢失！
+    await _emailService.SendAsync(message); // exception lost!
 }
 
-// 在 Rust 中没有 async void 等价物
+// no async void equivalent in Rust
 ```
 
 ```rust
-// Rust: 每个 async fn 必须返回 Future，必须有明确的错误处理路径
+// Rust: every async fn must return a Future, must have explicit error handling
 async fn send_notification(
     email: &EmailService,
     message: &str,
@@ -747,7 +747,7 @@ async fn send_notification(
     email.send(message).await
 }
 
-// 如需 fire-and-forget，显式 spawn 并处理 JoinHandle
+// for fire-and-forget, explicitly spawn and handle JoinHandle
 tokio::spawn(async move {
     if let Err(e) = send_notification(&email, msg).await {
         tracing::error!(error = %e, "notification failed");
@@ -758,11 +758,11 @@ tokio::spawn(async move {
 ### Mistake 5: Property Pattern Over-Translation
 
 ```csharp
-// C#: 属性是语言特性
+// C#: properties are language features
 public class Person
 {
-    public string Name { get; set; }       // 自动属性
-    public int Age { get; private set; }   // 私有 setter
+    public string Name { get; set; }       // auto-property
+    public int Age { get; private set; }   // private setter
 
     private string _email;
     public string Email
@@ -774,10 +774,10 @@ public class Person
 ```
 
 ```rust
-// Rust: 简单场景用 pub 字段，需要验证/计算时用 getter/setter 方法
+// Rust: use pub fields for simple cases, getter/setter methods for validation/computation
 pub struct Person {
-    pub name: String,   // 简单公有字段
-    age: u32,           // 私有字段
+    pub name: String,   // simple public field
+    age: u32,           // private field
     email: String,
 }
 
