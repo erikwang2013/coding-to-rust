@@ -1,5 +1,7 @@
 # Coding to Rust — 多语言迁移到 Rust 的技能集合
 
+> [English](README.en.md)
+
 ## 项目介绍
 
 **Coding to Rust** 是一个 Claude Code 技能集合，覆盖从 13 种主流编程语言迁移到 Rust 的完整指南。每种语言提供：
@@ -110,4 +112,3 @@ coding-to-rust/
 
 ---
 
-> English version: [README.en.md](README.en.md)
